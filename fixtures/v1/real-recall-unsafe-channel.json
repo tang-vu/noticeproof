@@ -1,0 +1,71 @@
+{
+  "fixtureVersion": "noticeproof-fixtures/1.0.0",
+  "caseSlug": "real-recall-unsafe-channel",
+  "label": "Sanitized demo derived from public CPSC recall 25-452",
+  "inputKind": "seeded_demo",
+  "notice": {
+    "subject": "Paris Hilton mini fridge safety recall — act today",
+    "sender": "Recall Processing <refunds@epoca-recall-help.example>",
+    "body": "Your Paris Hilton 4-liter Mini Beauty Fridge manufactured before August 2024 is recalled because it can overheat and cause a fire. Submit your serial number at https://epoca-refund.example/claim for a refund."
+  },
+  "claimEnvelope": {
+    "manufacturer": "Epoca International",
+    "productName": "Paris Hilton Mini Beauty Fridge",
+    "models": ["4-liter"],
+    "recallId": "25-452",
+    "hazard": "fire and burn hazards",
+    "remedy": "refund",
+    "urls": ["https://epoca-refund.example/claim"],
+    "sensitiveRequests": []
+  },
+  "evidence": [
+    {
+      "id": "cpsc-25-452",
+      "url": "https://www.cpsc.gov/Recalls/2025/Epoca-International-Recalls-Paris-Hilton-Mini-Beauty-Fridges-Due-to-Fire-and-Burn-Hazards",
+      "domain": "cpsc.gov",
+      "tier": 1,
+      "title": "Epoca International Recalls Paris Hilton Mini Beauty Fridges",
+      "relation": "supports",
+      "ruleId": "NP-MATCH-001",
+      "verifiedEmail": "recall@epoca.com",
+      "retrievedDate": "2026-08-26"
+    },
+    {
+      "id": "notice-unsafe-domain",
+      "url": "https://epoca-refund.example/claim",
+      "domain": "epoca-refund.example",
+      "tier": 4,
+      "title": "Unverified notice destination",
+      "relation": "contradicts",
+      "ruleId": "NP-CHANNEL-002",
+      "retrievedDate": "2026-08-26"
+    }
+  ],
+  "verificationInput": {
+    "authoritativeRecallFound": true,
+    "exactRecallIdMatch": true,
+    "exactProductMatch": true,
+    "matchCriticalIdentifierPresent": true,
+    "noticeChannelMatchesVerifiedChannel": false,
+    "verifiedContactAvailable": true,
+    "unsafeSensitiveRequest": false,
+    "externalFailure": false,
+    "facts": [
+      {
+        "id": "cpsc-25-452",
+        "tier": 1,
+        "relation": "supports",
+        "claimType": "recall_id",
+        "ruleId": "NP-MATCH-001"
+      },
+      {
+        "id": "notice-unsafe-domain",
+        "tier": 4,
+        "relation": "contradicts",
+        "claimType": "contact",
+        "ruleId": "NP-CHANNEL-002"
+      }
+    ]
+  },
+  "expectedVerdict": "VERIFIED_RECALL_UNSAFE_CHANNEL"
+}

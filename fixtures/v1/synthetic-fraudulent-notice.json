@@ -1,0 +1,34 @@
+{
+  "fixtureVersion": "noticeproof-fixtures/1.0.0",
+  "caseSlug": "synthetic-fraudulent-notice",
+  "label": "Synthetic test fixture — no real sender or consumer data",
+  "inputKind": "seeded_demo",
+  "notice": {
+    "subject": "URGENT: Complete your BrightNest kettle recall refund",
+    "sender": "BrightNest Safety <recalls@brightnest-alert.example>",
+    "body": "Your BrightNest Smart Kettle BN-K100 has been recalled. Sign in now at https://brightnest-refund.example/login and enter your password and one-time code to receive a $149 refund within 24 hours."
+  },
+  "claimEnvelope": {
+    "manufacturer": "BrightNest",
+    "productName": "Smart Kettle",
+    "models": ["BN-K100"],
+    "recallId": null,
+    "hazard": null,
+    "remedy": "refund",
+    "urls": ["https://brightnest-refund.example/login"],
+    "sensitiveRequests": ["password", "one_time_code"]
+  },
+  "evidence": [],
+  "verificationInput": {
+    "authoritativeRecallFound": false,
+    "exactRecallIdMatch": false,
+    "exactProductMatch": false,
+    "matchCriticalIdentifierPresent": true,
+    "noticeChannelMatchesVerifiedChannel": false,
+    "verifiedContactAvailable": false,
+    "unsafeSensitiveRequest": true,
+    "externalFailure": false,
+    "facts": []
+  },
+  "expectedVerdict": "CONFLICTING_NOTICE"
+}

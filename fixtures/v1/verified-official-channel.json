@@ -1,0 +1,63 @@
+{
+  "fixtureVersion": "noticeproof-fixtures/1.0.0",
+  "caseSlug": "verified-official-channel",
+  "label": "Sanitized demo derived from public CPSC recall 25-237",
+  "inputKind": "seeded_demo",
+  "notice": {
+    "subject": "Kids Thrill Shape Sorter Car model MZL-038 recall",
+    "sender": "Deals Oasis Recall <shapesorterrecall@gmail.com>",
+    "body": "The Kids Thrill Shape Sorter Car, model MZL-038 and batch BEDLEE220801, is recalled because small balls create a choking hazard. Contact shapesorterrecall@gmail.com for a return label and full refund. Recall 25-237."
+  },
+  "claimEnvelope": {
+    "manufacturer": "Deals Oasis",
+    "productName": "Kids Thrill Shape Sorter Car Toys",
+    "models": ["MZL-038"],
+    "lots": ["BEDLEE220801"],
+    "recallId": "25-237",
+    "hazard": "choking hazard",
+    "remedy": "refund",
+    "emails": ["shapesorterrecall@gmail.com"],
+    "sensitiveRequests": []
+  },
+  "evidence": [
+    {
+      "id": "cpsc-25-237",
+      "url": "https://www.cpsc.gov/Recalls/2025/Deals-Oasis-Recalls-Shape-Sorter-Car-Toys-Due-to-Choking-Hazard-Violation-of-Small-Parts-Requirements-Risk-of-Serious-Injury-or-Death",
+      "domain": "cpsc.gov",
+      "tier": 1,
+      "title": "Deals Oasis Recalls Shape Sorter Car Toys",
+      "relation": "supports",
+      "ruleId": "NP-CHANNEL-001",
+      "verifiedEmail": "shapesorterrecall@gmail.com",
+      "retrievedDate": "2026-08-26",
+      "trustNote": "The generic Gmail address is trusted because the exact address is explicitly listed in the Tier 1 CPSC record."
+    }
+  ],
+  "verificationInput": {
+    "authoritativeRecallFound": true,
+    "exactRecallIdMatch": true,
+    "exactProductMatch": true,
+    "matchCriticalIdentifierPresent": true,
+    "noticeChannelMatchesVerifiedChannel": true,
+    "verifiedContactAvailable": true,
+    "unsafeSensitiveRequest": false,
+    "externalFailure": false,
+    "facts": [
+      {
+        "id": "cpsc-25-237",
+        "tier": 1,
+        "relation": "supports",
+        "claimType": "recall_id",
+        "ruleId": "NP-MATCH-001"
+      },
+      {
+        "id": "cpsc-25-237",
+        "tier": 1,
+        "relation": "supports",
+        "claimType": "contact",
+        "ruleId": "NP-CHANNEL-001"
+      }
+    ]
+  },
+  "expectedVerdict": "VERIFIED_OFFICIAL_CHANNEL"
+}
