@@ -25,7 +25,7 @@ http.route({
   path: "/health",
   method: "GET",
   handler: httpAction(() =>
-    Promise.resolve(Response.json({ service: "noticeproof", status: "ok", version: "2026-08-28" })),
+    Promise.resolve(Response.json({ service: "noticeproof", status: "ok", version: "0.1.0" })),
   ),
 });
 
