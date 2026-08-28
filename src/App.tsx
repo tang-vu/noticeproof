@@ -92,9 +92,10 @@ function Landing({
   const [screenshot, setScreenshot] = useState<File>();
   const [status, setStatus] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const inbox = "forward@noticeproof.agentmail.to";
+  const inbox = import.meta.env.VITE_AGENTMAIL_FORWARDING_ADDRESS?.trim();
 
   const copyInbox = async () => {
+    if (!inbox) return;
     await navigator.clipboard.writeText(inbox);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
@@ -261,8 +262,8 @@ function Landing({
                 a separate, safer action channel.
               </p>
               <div className="copy-field">
-                <code>{inbox}</code>
-                <button type="button" onClick={() => void copyInbox()}>
+                <code>{inbox ?? "AgentMail inbox not configured"}</code>
+                <button type="button" disabled={!inbox} onClick={() => void copyInbox()}>
                   {copied ? "Copied" : "Copy"}
                 </button>
               </div>

@@ -48,6 +48,8 @@ See [Threat model](docs/THREAT_MODEL.md) and [Evidence model](docs/EVIDENCE_MODE
 
 Requirements: Node.js 22+ (tested with 24.14.1), npm 11+, and a Convex account or local Convex backend.
 
+Set `VITE_AGENTMAIL_FORWARDING_ADDRESS` only after AgentMail has created the real public inbox; the UI labels the inbox unavailable rather than displaying a fixture address.
+
 ```bash
 npm ci
 npm run dev
