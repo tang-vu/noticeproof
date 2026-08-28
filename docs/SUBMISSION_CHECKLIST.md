@@ -20,7 +20,7 @@ Status is evidence-based as of 2026-08-28.
 - [ ] Production secrets/webhooks configured
 - [ ] Production demo cases seeded idempotently
 - [x] Public development `convex.site` URL tested externally
-- [ ] Repository changes committed and pushed
+- [x] Repository changes committed and pushed to `main`
 - [ ] Demo video recorded and linked (under three minutes)
 - [ ] Public social post published and linked
 - [ ] Exact VibeApps submission page fields reviewed and submitted
