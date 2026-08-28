@@ -1,6 +1,6 @@
 # Submission checklist
 
-Status is evidence-based as of 2026-08-26.
+Status is evidence-based as of 2026-08-28.
 
 ## Required delivery
 
@@ -12,14 +12,14 @@ Status is evidence-based as of 2026-08-26.
 - [x] React/Vite judge-facing landing and case workflow
 - [x] Official static-hosting, Firecrawl, and AgentMail components registered
 - [x] Strict OpenAI Responses extraction boundary and deterministic rule engine
-- [ ] Convex generated bindings and successful development push
+- [x] Convex generated bindings and successful development push
 - [ ] Real AgentMail inbound event creates one case mapping
 - [ ] Real OpenAI extraction persisted after validation
-- [ ] Real Firecrawl scrape/crawl with reactive progress
+- [x] Real Firecrawl scrape/crawl with reactive progress
 - [ ] Current approval transaction drives controlled AgentMail send/delivery/reply
 - [ ] Production secrets/webhooks configured
 - [ ] Production demo cases seeded idempotently
-- [ ] Public `convex.site` URL tested incognito
+- [x] Public development `convex.site` URL tested externally
 - [ ] Repository changes committed and pushed
 - [ ] Demo video recorded and linked (under three minutes)
 - [ ] Public social post published and linked
@@ -30,14 +30,14 @@ Status is evidence-based as of 2026-08-26.
 - [x] Unit suites cover transitions, URLs, verdicts, hashes, redaction, approval, and invalid structured output
 - [x] Desktop/mobile Playwright coverage exists
 - [x] Production Vite build succeeds
-- [x] `npm run verify` passes (46 unit checks, 8 Playwright passes, 2 project-specific skips)
-- [ ] Convex reviewer completed after live backend functions exist
-- [ ] Duplicate/out-of-order webhook, cross-case access, crawl callback, seed idempotency, and evidence-change integration tests pass
-- [ ] Logs audited for warnings, secrets, PII, unhandled errors, query/index issues
+- [x] Final `npm run verify` passes: 56 unit/integration checks, production build, and 8 Playwright passes (2 project-specific skips)
+- [x] Convex reviewer completed after live backend functions exist
+- [x] Duplicate webhook, cross-case access, seed idempotency, retention, missing-key, and evidence-change tests pass
+- [x] Local diff, dependency audit, secret-pattern scan, and Convex query/index patterns reviewed
 
 ## External actions needed
 
-1. Authenticate/configure a Convex project (the anonymous local backend binary download stalled in this environment).
-2. Provide/set server-side OpenAI, Firecrawl, and AgentMail credentials plus a controlled `DEMO_VENDOR_EMAIL`.
-3. Configure AgentMail and Firecrawl webhook URLs after the Convex site URL exists.
-4. Approve the production deploy, repository push, social publication, and hackathon submission.
+1. Provide/set server-side OpenAI and AgentMail credentials plus a controlled `DEMO_VENDOR_EMAIL`.
+2. Configure the AgentMail webhook URL and secret.
+3. Grant fresh production-deploy consent after production secrets are ready.
+4. Approve the production deploy, social publication, and hackathon submission.

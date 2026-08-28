@@ -10,7 +10,7 @@ NoticeProof verifies the claims in a suspicious recall notice against authoritat
 
 Urgent recall messages can be fake, outdated, incomplete—or describe a real recall while substituting an unsafe link. NoticeProof decomposes the exact message into claims, finds the matching CPSC record and authority-linked manufacturer evidence, evaluates exact identifiers and contact details with deterministic rules, then requires approval before starting a new email thread through AgentMail.
 
-**Live demo:** not deployed yet. The repository currently runs locally with clearly labeled sanitized fixtures; no live sponsor call is claimed until credentials and a Convex deployment are configured.
+**Live development demo:** https://outgoing-snake-653.convex.site — public, capability-scoped, and hosted through Convex static hosting. Firecrawl scrape/crawl and Convex realtime are live; OpenAI and AgentMail remain credential-gated and are labeled accordingly.
 
 ## Three-step demo
 
@@ -31,7 +31,7 @@ NoticeProof is not a recall feed: its object is a particular notice in an anxiou
 - **Firecrawl’s Convex component** performs search/scrape and a bounded durable manufacturer-domain crawl whose pages and progress are reactive Convex state. Search position never grants authority.
 - **AgentMail’s Convex component** owns the persistent inbox, verified/deduplicated inbound events, threads, durable delivery, and replies. A send requires a current single-use approval and independently verified recipient.
 
-The components are registered in `convex/convex.config.ts`. Live wrappers and runtime proof remain gated on completion of Convex deployment configuration.
+The components are registered in `convex/convex.config.ts`. The development deployment proves Convex realtime and a bounded Firecrawl crawl; OpenAI and AgentMail adapters are deployed but cannot be claimed live until their account secrets are configured.
 
 ## Safety and limits
 

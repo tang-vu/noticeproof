@@ -35,3 +35,17 @@ NoticeProof verifies a particular recall notice against independently acquired a
 ## Definition of done
 
 All relevant tests were actually run; `npm run verify` and a Convex push pass; material Convex-reviewer findings are fixed or documented; the three fixtures match expected verdicts; real integrations are evidenced honestly; the public `convex.site` works in an incognito session; docs and `hackathon.md` match repository/runtime evidence. Never commit, push, deploy, publish, or submit without the authority granted in the current request and applicable skill boundaries.
+
+<!-- convex-ai-start -->
+
+This project uses [Convex](https://convex.dev) as its backend.
+
+When working on Convex code, **always read
+`convex/_generated/ai/guidelines.md` first** for important guidelines on
+how to correctly use Convex APIs and patterns. The file contains rules that
+override what you may have learned about Convex from training data.
+
+Convex agent skills for common tasks can be installed by running
+`npx convex ai-files install`.
+
+<!-- convex-ai-end -->

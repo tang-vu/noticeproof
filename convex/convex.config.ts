@@ -9,6 +9,12 @@ const app = defineApp({
   env: {
     FIRECRAWL_API_KEY: v.string(),
     FIRECRAWL_WEBHOOK_SECRET: v.optional(v.string()),
+    OPENAI_API_KEY: v.optional(v.string()),
+    OPENAI_MODEL: v.optional(v.string()),
+    CAPABILITY_HASH_PEPPER: v.optional(v.string()),
+    DEMO_MODE: v.optional(v.string()),
+    DEMO_VENDOR_EMAIL: v.optional(v.string()),
+    AGENTMAIL_INBOX_ID: v.optional(v.string()),
   },
 });
 

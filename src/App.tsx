@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { demoCases, getDemoCase, type DemoCase } from "./demoData";
 
 const VERDICT_COPY = {
@@ -77,7 +77,15 @@ function Header({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function Landing() {
+type IntakeResult = { publicId: string; capabilityToken: string };
+
+function Landing({
+  liveStatus,
+  onSubmitNotice,
+}: {
+  liveStatus?: ReactNode;
+  onSubmitNotice?: (body: string) => Promise<IntakeResult>;
+}) {
   const [copied, setCopied] = useState(false);
   const [message, setMessage] = useState("");
   const [fileName, setFileName] = useState("");
@@ -91,17 +99,26 @@ function Landing() {
     window.setTimeout(() => setCopied(false), 1800);
   };
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!message.trim() && !fileName) {
       setStatus("Paste the notice or choose an image first.");
       return;
     }
-    setStatus(
-      import.meta.env.VITE_CONVEX_URL
-        ? "Secure intake is connecting to Convex."
-        : "Live intake is not configured in this local build. Open a seeded case to explore the complete verified workflow.",
-    );
+    if (!onSubmitNotice || !message.trim()) {
+      setStatus(
+        "Live text intake is unavailable. Open a seeded case to explore the verified workflow.",
+      );
+      return;
+    }
+    try {
+      setStatus("Creating a private capability-scoped case…");
+      const result = await onSubmitNotice(message);
+      sessionStorage.setItem(`noticeproof:cap:${result.publicId}`, result.capabilityToken);
+      window.location.hash = `/case/${encodeURIComponent(result.publicId)}`;
+    } catch {
+      setStatus("Intake could not complete safely. Please retry in a moment.");
+    }
   };
 
   return (
@@ -183,13 +200,15 @@ function Landing() {
           <i /> <strong>AgentMail</strong>
         </section>
 
+        {liveStatus}
+
         <section className="intake-section" id="intake">
           <div className="section-heading">
             <p className="kicker">Start with the message—not its links</p>
             <h2>Send one notice. Keep your inbox private.</h2>
           </div>
           <div className="intake-grid">
-            <form className="intake-card" onSubmit={submit}>
+            <form className="intake-card" onSubmit={(event) => void submit(event)}>
               <label htmlFor="notice-text">Paste the email or text message</label>
               <textarea
                 id="notice-text"
@@ -781,11 +800,21 @@ function Footer() {
   );
 }
 
-export default function App() {
+export default function App({
+  liveStatus,
+  onSubmitNotice,
+  renderLiveCase,
+}: {
+  liveStatus?: ReactNode;
+  onSubmitNotice?: (body: string) => Promise<IntakeResult>;
+  renderLiveCase?: (publicId: string) => ReactNode;
+}) {
   const slug = useHashRoute();
   const item = slug ? getDemoCase(slug) : undefined;
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [slug]);
-  return item ? <CaseView item={item} /> : <Landing />;
+  if (item) return <CaseView item={item} />;
+  if (slug && renderLiveCase) return renderLiveCase(slug);
+  return <Landing liveStatus={liveStatus} {...(onSubmitNotice ? { onSubmitNotice } : {})} />;
 }

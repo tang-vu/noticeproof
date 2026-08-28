@@ -3,19 +3,27 @@
 - **Project:** NoticeProof
 - **Event:** Convex All Gas Hackathon sponsored by OpenAI, Firecrawl, and AgentMail
 - **What it does:** Verifies the claims in a suspicious recall notice against authoritative evidence and switches the consumer to an independently verified contact channel.
-- **Live app:** not deployed
+- **Live app:** https://outgoing-snake-653.convex.site (development)
 - **Repo:** https://github.com/tang-vu/noticeproof
 - **Frontend:** Convex static hosting
-- **Convex deployment:** not deployed
+- **Convex deployment:** https://outgoing-snake-653.convex.cloud (development)
 - **Components:** @convex-dev/static-hosting, @firecrawl/firecrawl-convex, @agentmail/convex
-- **Convex features:** schema, tables, indexes
+- **Convex features:** schema, tables, indexes, queries, mutations, actions, HTTP actions, crons, scheduled functions, file storage, realtime queries
 - **Auth:** none
 - **AI models:** gpt-5-mini (configurable with `OPENAI_MODEL`)
 - **Started:** 2026-08-26T14:18:38Z
-- **Last updated:** 2026-08-26T15:21:46Z
+- **Last updated:** 2026-08-28T16:47:00Z
 
 ## Log
 
-### 2026-08-26 - working tree
+### 2026-08-26 - 6e6df37
 
 Froze the MVP contract and built the first judge-facing workflow: three labeled sanitized cases show claim normalization, authority-tier evidence, deterministic verdict rules, safe-action review, and JSON receipt export in a responsive Vite UI. Registered the static-hosting, Firecrawl, and AgentMail components; added the indexed application schema and a strict OpenAI Responses extraction boundary; and added unit plus Playwright coverage (`convex/`, `shared/`, `fixtures/v1/`, `src/`, `tests/`). `npm run verify` passes with 46 unit checks, a production build, and 8 Playwright passes with 2 project-specific skips; `npm audit --omit=dev` reports 0 vulnerabilities after updating DOMPurify. Convex code generation cannot proceed until an authenticated cloud deployment is selected (the anonymous local backend download did not complete), so the app is not deployed and no live sponsor API call is claimed yet.
+
+### 2026-08-27 - working tree
+
+Provisioned the Convex development deployment, pushed the application schema and official components, and seeded three sanitized cases idempotently. Added capability-scoped case queries, bounded public intake, realtime React subscription, and an internal Firecrawl action; a live CPSC scrape returned 12,648 Markdown characters and content hash `23248da42f616cbd3b218b48c7f2bd40a29fab14bf2488fbedf97fb70caca5b0`, which was persisted with provenance and an idempotent timeline event (`convex/cases.ts`, `convex/seeds.ts`, `convex/firecrawl.ts`, `src/LiveDeploymentStatus.tsx`). Convex push and 49 tests pass. OpenAI and AgentMail have not yet been exercised live, and no public frontend is deployed.
+
+### 2026-08-28 - working tree
+
+Published the development frontend through Convex static hosting and externally verified the homepage and health route. Added private live intake, scheduled schema-constrained extraction with retryable failure semantics, verified-recipient approval binding, durable AgentMail send/webhook adapters, retention cleanup cron, and read-only public fixtures. Firecrawl followed the manufacturer URL directly linked by CPSC, completed a bounded durable crawl with one stored page and one credit, and exposes reactive progress in the landing UI (`convex/approvals.ts`, `convex/email.ts`, `convex/extraction.ts`, `convex/firecrawl.ts`, `convex/maintenance.ts`, `src/LiveApp.tsx`). The final local gate passes with 56 unit/integration checks, a production build, and 8 Playwright passes with 2 project-specific skips; the production dependency audit reports 0 vulnerabilities. OpenAI and AgentMail have not yet been exercised live because their deployment credentials are not configured.

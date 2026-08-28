@@ -12,7 +12,7 @@ import {
   verdictCode,
 } from "./model/validators";
 
-export default defineSchema({
+const schema = defineSchema({
   cases: defineTable({
     publicId: v.string(),
     capabilityHash: v.string(),
@@ -29,6 +29,7 @@ export default defineSchema({
     isDemo: v.boolean(),
     isPublicFixture: v.boolean(),
     rawRetentionUntil: v.optional(v.number()),
+    rawContentPurgedAt: v.optional(v.number()),
     fixtureVersion: v.optional(v.string()),
   })
     .index("by_public_id", ["publicId"])
@@ -43,6 +44,7 @@ export default defineSchema({
     subject: v.string(),
     sender: v.string(),
     bodyPreview: v.string(),
+    sanitizedBody: v.optional(v.string()),
     attachmentMetadata: v.array(
       v.object({
         name: v.string(),
@@ -129,6 +131,7 @@ export default defineSchema({
       v.literal("not_needed"),
     ),
     verifiesContact: v.boolean(),
+    verifiedEmail: v.optional(v.string()),
     crawlId: v.optional(v.string()),
     createdAt: v.number(),
   })
@@ -198,7 +201,21 @@ export default defineSchema({
   })
     .index("by_case_id", ["caseId"])
     .index("by_case_and_state", ["caseId", "state"])
-    .index("by_payload_hash", ["payloadHash"]),
+    .index("by_payload_hash", ["payloadHash"])
+    .index("by_state_and_expires_at", ["state", "expiresAt"]),
+
+  outboundPayloads: defineTable({
+    caseId: v.id("cases"),
+    approvalId: v.id("approvals"),
+    intendedRecipient: v.string(),
+    actualRecipient: v.string(),
+    subject: v.string(),
+    body: v.string(),
+    payloadHash: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_approval_id", ["approvalId"])
+    .index("by_case_id", ["caseId"]),
 
   communications: defineTable({
     caseId: v.id("cases"),
@@ -282,3 +299,5 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_scope_action_window", ["scopeHash", "action", "windowStart"]),
 });
+
+export default schema;

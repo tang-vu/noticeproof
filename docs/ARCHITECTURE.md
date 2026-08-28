@@ -51,4 +51,4 @@ No action is initiated from an LLM response. External failures select only `VERI
 
 ## Current implementation status
 
-The Vite fixture experience, strict extraction module, deterministic verifier, schema, registered components, and local tests are implemented. Convex generated bindings, live wrappers, seed mutation, and deployed runtime proof are not complete because a Convex project has not yet been configured; the local backend binary download repeatedly stalled. This boundary is intentional and visible rather than replaced by a fake live adapter.
+The development deployment now serves the Vite app publicly, seeds fixtures idempotently, exposes capability-scoped realtime queries, and records a live Firecrawl scrape plus bounded durable manufacturer crawl. OpenAI extraction and AgentMail webhook/send adapters are deployed with safe missing-secret behavior, but real OpenAI and AgentMail events are not claimed until those account credentials are configured.
