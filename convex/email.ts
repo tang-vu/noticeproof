@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import { sanitizePlainText } from "../shared/domain/redaction";
 import { internalMutation } from "./_generated/server";
-import { createCapabilityToken, sha256 } from "./lib/access";
+import { createCapabilityToken, hashCapabilityToken, sha256 } from "./lib/access";
+import { rawRetentionUntil } from "./lib/retention";
 
 function asRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value))
@@ -70,7 +71,7 @@ export const onMessageReceived = internalMutation({
     const publicId = `np_mail_${crypto.randomUUID().replaceAll("-", "")}`;
     const caseId = await ctx.db.insert("cases", {
       publicId,
-      capabilityHash: await sha256(capabilityToken),
+      capabilityHash: await hashCapabilityToken(capabilityToken),
       inputKind: "forwarded_email",
       currentState: "RECEIVED",
       riskLevel: "unknown",
@@ -79,7 +80,7 @@ export const onMessageReceived = internalMutation({
       createdAt: now,
       updatedAt: now,
       expiresAt: now + 30 * 24 * 60 * 60 * 1000,
-      rawRetentionUntil: now + 7 * 24 * 60 * 60 * 1000,
+      rawRetentionUntil: rawRetentionUntil(now),
       isDemo: false,
       isPublicFixture: false,
     });

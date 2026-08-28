@@ -15,6 +15,7 @@ const app = defineApp({
     DEMO_MODE: v.optional(v.string()),
     DEMO_VENDOR_EMAIL: v.optional(v.string()),
     AGENTMAIL_INBOX_ID: v.optional(v.string()),
+    RAW_RETENTION_DAYS: v.optional(v.string()),
   },
 });
 

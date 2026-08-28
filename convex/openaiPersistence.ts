@@ -1,19 +1,29 @@
 import { v } from "convex/values";
 import { claimEnvelopeSchema, type ClaimEnvelope } from "../shared/domain/claimEnvelope";
 import { assertTransition } from "../shared/domain/stateMachine";
+import { internal } from "./_generated/api";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { sha256 } from "./lib/access";
 
 export const loadInput = internalQuery({
   args: { caseId: v.id("cases") },
-  returns: v.object({ text: v.string(), noticeId: v.id("notices") }),
+  returns: v.object({
+    text: v.string(),
+    noticeId: v.id("notices"),
+    imageUrl: v.optional(v.string()),
+  }),
   handler: async (ctx, args) => {
     const notice = await ctx.db
       .query("notices")
       .withIndex("by_case_id", (q) => q.eq("caseId", args.caseId))
       .first();
     if (!notice?.sanitizedBody) throw new Error("NOTICE_TEXT_NOT_AVAILABLE");
-    return { text: notice.sanitizedBody, noticeId: notice._id };
+    const imageUrl = notice.rawStorageId ? await ctx.storage.getUrl(notice.rawStorageId) : null;
+    return {
+      text: notice.sanitizedBody,
+      noticeId: notice._id,
+      ...(imageUrl ? { imageUrl } : {}),
+    };
   },
 });
 
@@ -99,6 +109,15 @@ export const persistSuccess = internalMutation({
       summary: "OpenAI returned a fully validated ClaimEnvelope.",
       timestamp: now,
       idempotencyKey: `openai:${caseDocument._id}:${contentHash}`,
+    });
+    assertTransition("CLAIMS_READY", "ACQUIRING_EVIDENCE");
+    await ctx.db.patch(caseDocument._id, {
+      currentState: "ACQUIRING_EVIDENCE",
+      nextAction: "Searching for an exact authoritative CPSC record.",
+      updatedAt: now,
+    });
+    await ctx.scheduler.runAfter(0, internal.evidencePipeline.acquireAndEvaluate, {
+      caseId: caseDocument._id,
     });
     return null;
   },

@@ -84,11 +84,12 @@ function Landing({
   onSubmitNotice,
 }: {
   liveStatus?: ReactNode;
-  onSubmitNotice?: (body: string) => Promise<IntakeResult>;
+  onSubmitNotice?: (body: string, screenshot?: File) => Promise<IntakeResult>;
 }) {
   const [copied, setCopied] = useState(false);
   const [message, setMessage] = useState("");
   const [fileName, setFileName] = useState("");
+  const [screenshot, setScreenshot] = useState<File>();
   const [status, setStatus] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const inbox = "forward@noticeproof.agentmail.to";
@@ -105,7 +106,7 @@ function Landing({
       setStatus("Paste the notice or choose an image first.");
       return;
     }
-    if (!onSubmitNotice || !message.trim()) {
+    if (!onSubmitNotice) {
       setStatus(
         "Live text intake is unavailable. Open a seeded case to explore the verified workflow.",
       );
@@ -113,7 +114,7 @@ function Landing({
     }
     try {
       setStatus("Creating a private capability-scoped case…");
-      const result = await onSubmitNotice(message);
+      const result = await onSubmitNotice(message, screenshot);
       sessionStorage.setItem(`noticeproof:cap:${result.publicId}`, result.capabilityToken);
       window.location.hash = `/case/${encodeURIComponent(result.publicId)}`;
     } catch {
@@ -212,7 +213,7 @@ function Landing({
               <label htmlFor="notice-text">Paste the email or text message</label>
               <textarea
                 id="notice-text"
-                maxLength={50000}
+                maxLength={40000}
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 placeholder="Paste the full notice here. Treat every link as untrusted until checked…"
@@ -226,7 +227,9 @@ function Landing({
                   onChange={(event) => {
                     const file = event.target.files?.[0];
                     if (!file) return;
-                    setFileName(file.size > 8 * 1024 * 1024 ? "" : file.name);
+                    const accepted = file.size <= 8 * 1024 * 1024;
+                    setFileName(accepted ? file.name : "");
+                    setScreenshot(accepted ? file : undefined);
                     setStatus(
                       file.size > 8 * 1024 * 1024
                         ? "Images must be 8 MiB or smaller."
@@ -241,7 +244,7 @@ function Landing({
                 >
                   ＋ {fileName || "Add screenshot"}
                 </button>
-                <span>{message.length.toLocaleString()} / 50,000</span>
+                <span>{message.length.toLocaleString()} / 40,000</span>
               </div>
               <button className="button primary wide" type="submit">
                 Verify this notice <span>→</span>
@@ -806,7 +809,7 @@ export default function App({
   renderLiveCase,
 }: {
   liveStatus?: ReactNode;
-  onSubmitNotice?: (body: string) => Promise<IntakeResult>;
+  onSubmitNotice?: (body: string, screenshot?: File) => Promise<IntakeResult>;
   renderLiveCase?: (publicId: string) => ReactNode;
 }) {
   const slug = useHashRoute();

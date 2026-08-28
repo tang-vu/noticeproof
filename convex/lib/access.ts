@@ -1,4 +1,4 @@
-import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { env, type MutationCtx, type QueryCtx } from "../_generated/server";
 import type { Doc } from "../_generated/dataModel";
 
 type ReadCtx = QueryCtx | MutationCtx;
@@ -8,6 +8,12 @@ const encoder = new TextEncoder();
 export async function sha256(value: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", encoder.encode(value));
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function hashCapabilityToken(value: string): Promise<string> {
+  return await sha256(
+    env.CAPABILITY_HASH_PEPPER ? `${env.CAPABILITY_HASH_PEPPER}:${value}` : value,
+  );
 }
 
 export async function requireCaseAccess(
@@ -24,7 +30,7 @@ export async function requireCaseAccess(
   if (caseDocument.isPublicFixture) return caseDocument;
   if (!capabilityToken) throw new Error("CASE_ACCESS_DENIED");
 
-  const candidate = await sha256(capabilityToken);
+  const candidate = await hashCapabilityToken(capabilityToken);
   if (candidate !== caseDocument.capabilityHash) throw new Error("CASE_ACCESS_DENIED");
   return caseDocument;
 }

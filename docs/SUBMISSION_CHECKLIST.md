@@ -10,6 +10,7 @@ Status is evidence-based as of 2026-08-28.
 - [x] Frozen `SPEC.md`, executable `PLANS.md`, and repository `AGENTS.md`
 - [x] Sanitized versioned three-case fixture set
 - [x] React/Vite judge-facing landing and case workflow
+- [x] Private screenshot upload through Convex storage with bounded metadata and retention cleanup
 - [x] Official static-hosting, Firecrawl, and AgentMail components registered
 - [x] Strict OpenAI Responses extraction boundary and deterministic rule engine
 - [x] Convex generated bindings and successful development push
@@ -30,7 +31,7 @@ Status is evidence-based as of 2026-08-28.
 - [x] Unit suites cover transitions, URLs, verdicts, hashes, redaction, approval, and invalid structured output
 - [x] Desktop/mobile Playwright coverage exists
 - [x] Production Vite build succeeds
-- [x] Final `npm run verify` passes: 56 unit/integration checks, production build, and 8 Playwright passes (2 project-specific skips)
+- [x] Final `npm run verify` passes: 59 unit/integration checks, production build, and 8 Playwright passes (2 project-specific skips)
 - [x] Convex reviewer completed after live backend functions exist
 - [x] Duplicate webhook, cross-case access, seed idempotency, retention, missing-key, and evidence-change tests pass
 - [x] Local diff, dependency audit, secret-pattern scan, and Convex query/index patterns reviewed

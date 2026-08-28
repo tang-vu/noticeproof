@@ -12,12 +12,11 @@ export const extract = internalAction({
   handler: async (ctx, args) => {
     try {
       if (!env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY_NOT_CONFIGURED");
-      const input: { text: string; noticeId: Id<"notices"> } = await ctx.runQuery(
-        internal.openaiPersistence.loadInput,
-        { caseId: args.caseId },
-      );
+      const input: { text: string; noticeId: Id<"notices">; imageUrl?: string } =
+        await ctx.runQuery(internal.openaiPersistence.loadInput, { caseId: args.caseId });
       const result = await extractClaimEnvelope({
         noticeText: input.text,
+        ...(input.imageUrl ? { imageDataUrl: input.imageUrl } : {}),
         apiKey: env.OPENAI_API_KEY,
         model: env.OPENAI_MODEL ?? "gpt-5-mini",
         maxAttempts: 2,

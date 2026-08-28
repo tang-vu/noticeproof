@@ -453,6 +453,124 @@ nav a {
   grid-column: 1 / -1;
 }
 
+.live-verdict-panel {
+  border-top: 4px solid var(--navy);
+}
+
+.live-rule-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.live-rule-list span {
+  border: 1px solid var(--line);
+  padding: 0.35rem 0.55rem;
+  font:
+    700 0.68rem/1.2 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.live-rule-list span[data-outcome="pass"] {
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 45%, white);
+}
+
+.live-rule-list span[data-outcome="blocked"],
+.live-rule-list span[data-outcome="fail"] {
+  color: var(--red);
+  border-color: color-mix(in srgb, var(--red) 45%, white);
+}
+
+.live-claim-list {
+  display: grid;
+  gap: 0;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.live-claim-list li {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.live-claim-list span,
+.live-claim-list small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.live-claim-list span {
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.live-action-panel {
+  grid-column: 1 / -1;
+  border-top: 4px solid var(--green);
+}
+
+.live-draft-form,
+.approval-preview {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.live-draft-form label,
+.approval-preview > div:first-child {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 800;
+}
+
+.live-draft-form input,
+.live-draft-form textarea,
+.approval-preview pre {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.85rem;
+  color: var(--navy);
+}
+
+.live-draft-form textarea {
+  min-height: 130px;
+  resize: vertical;
+}
+
+.approval-preview pre {
+  overflow: auto;
+  white-space: pre-wrap;
+  font:
+    0.82rem/1.55 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+}
+
+.approval-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.demo-routing-note {
+  border-left: 4px solid var(--amber);
+  background: var(--amber-soft);
+  padding: 0.8rem;
+}
+
 .timeline-panel ol {
   margin: 20px 0 0;
   padding: 0;

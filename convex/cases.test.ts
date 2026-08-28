@@ -62,6 +62,64 @@ async function createActionablePrivateCase(t: TestConvex<typeof schema>) {
   return { created, source };
 }
 
+async function createEvidenceReadyCase(t: TestConvex<typeof schema>) {
+  const created = await t.mutation(api.cases.createPasted, {
+    subject: "Recall 25-237",
+    sender: "alerts@unsafe.example",
+    body: "Shape Sorter Car model MZL-038 is recalled. Contact attacker@unsafe.example.",
+  });
+  const ids = await t.run(async (ctx) => {
+    const caseDocument = await ctx.db
+      .query("cases")
+      .withIndex("by_public_id", (q) => q.eq("publicId", created.publicId))
+      .unique();
+    const notice = caseDocument
+      ? await ctx.db
+          .query("notices")
+          .withIndex("by_case_id", (q) => q.eq("caseId", caseDocument._id))
+          .first()
+      : null;
+    if (!caseDocument || !notice) throw new Error("missing case input");
+    await ctx.db.patch(caseDocument._id, { currentState: "ACQUIRING_EVIDENCE" });
+    const envelopeId = await ctx.db.insert("claimEnvelopes", {
+      caseId: caseDocument._id,
+      noticeId: notice._id,
+      schemaVersion: "claim-envelope/1.0.0",
+      model: "test",
+      language: "en",
+      noticeType: "recall",
+      productName: "Shape Sorter Car",
+      recallId: "25-237",
+      requestedSensitiveKinds: [],
+      validationStatus: "valid",
+      contentHash: "claim-envelope-hash",
+      createdAt: 1,
+    });
+    const modelClaimId = await ctx.db.insert("claims", {
+      caseId: caseDocument._id,
+      claimEnvelopeId: envelopeId,
+      claimType: "model",
+      rawValue: "MZL-038",
+      normalizedValue: "MZL-038",
+      sourceSpan: { start: 0, end: 7, quote: "MZL-038" },
+      confidence: 1,
+      matchCritical: true,
+    });
+    const emailClaimId = await ctx.db.insert("claims", {
+      caseId: caseDocument._id,
+      claimEnvelopeId: envelopeId,
+      claimType: "email",
+      rawValue: "attacker@unsafe.example",
+      normalizedValue: "attacker@unsafe.example",
+      sourceSpan: { start: 8, end: 31, quote: "attacker@unsafe.example" },
+      confidence: 1,
+      matchCritical: false,
+    });
+    return { caseId: caseDocument._id, modelClaimId, emailClaimId };
+  });
+  return { created, ...ids };
+}
+
 describe("Convex case boundaries", () => {
   it("seeds exactly three public fixtures idempotently", async () => {
     const t = convexTest(schema, modules);
@@ -105,6 +163,64 @@ describe("Convex case boundaries", () => {
     }
   });
 
+  it("persists a deterministic unsafe-channel verdict from exact CPSC evidence", async () => {
+    const t = convexTest(schema, modules);
+    const evidenceCase = await createEvidenceReadyCase(t);
+    await t.mutation(internal.evidencePipeline.persistEvaluation, {
+      caseId: evidenceCase.caseId,
+      claimEnvelopeHash: "claim-envelope-hash",
+      authoritativeRecallFound: true,
+      exactRecallIdMatch: true,
+      exactProductMatch: true,
+      matchCriticalIdentifierPresent: true,
+      noticeChannelMatchesVerifiedChannel: false,
+      unsafeSensitiveRequest: false,
+      source: {
+        canonicalUrl: "https://www.cpsc.gov/Recalls/2025/fixture",
+        canonicalDomain: "cpsc.gov",
+        title: "Official CPSC fixture",
+        contentHash: "official-content-hash",
+        verifiedEmail: "shapesorterrecall@gmail.com",
+        matchedClaimIds: [evidenceCase.modelClaimId],
+        contradictedClaimIds: [evidenceCase.emailClaimId],
+        excerptsByClaimJson: JSON.stringify({
+          [evidenceCase.modelClaimId]: "The recalled model is MZL-038.",
+        }),
+      },
+    });
+
+    const result = await t.query(api.cases.get, {
+      publicId: evidenceCase.created.publicId,
+      capabilityToken: evidenceCase.created.capabilityToken,
+    });
+    expect(result.case.currentState).toBe("ACTIONABLE");
+    expect(result.case.currentVerdictCode).toBe("VERIFIED_RECALL_UNSAFE_CHANNEL");
+    expect(result.verdicts[0]?.ruleResults.map((rule) => rule.ruleId)).toContain("NP-CHANNEL-002");
+    expect(result.sources[0]?.verifiedEmail).toBe("shapesorterrecall@gmail.com");
+  });
+
+  it("never turns an empty authority result into safe", async () => {
+    const t = convexTest(schema, modules);
+    const evidenceCase = await createEvidenceReadyCase(t);
+    await t.mutation(internal.evidencePipeline.persistEvaluation, {
+      caseId: evidenceCase.caseId,
+      claimEnvelopeHash: "claim-envelope-hash",
+      authoritativeRecallFound: false,
+      exactRecallIdMatch: false,
+      exactProductMatch: false,
+      matchCriticalIdentifierPresent: true,
+      noticeChannelMatchesVerifiedChannel: false,
+      unsafeSensitiveRequest: false,
+    });
+    const result = await t.query(api.cases.get, {
+      publicId: evidenceCase.created.publicId,
+      capabilityToken: evidenceCase.created.capabilityToken,
+    });
+    expect(result.case.currentState).toBe("NO_AUTHORITATIVE_EVIDENCE");
+    expect(result.case.currentVerdictCode).toBe("NO_AUTHORITATIVE_EVIDENCE");
+    expect(result.case.riskLevel).toBe("unknown");
+  });
+
   it("binds an approval to an authoritative contact and immutable payload", async () => {
     const t = convexTest(schema, modules);
     const { created, source } = await createActionablePrivateCase(t);
@@ -131,6 +247,18 @@ describe("Convex case boundaries", () => {
 
     const approval = await t.run(async (ctx) => await ctx.db.get("approvals", draft.approvalId));
     expect(approval?.state).toBe("pending");
+
+    await t.mutation(api.approvals.rejectDraft, {
+      publicId: created.publicId,
+      capabilityToken: created.capabilityToken,
+      approvalId: draft.approvalId,
+    });
+    const rejected = await t.query(api.cases.get, {
+      publicId: created.publicId,
+      capabilityToken: created.capabilityToken,
+    });
+    expect(rejected.case.currentState).toBe("ACTIONABLE");
+    expect(rejected.approvals[0]?.state).toBe("rejected");
   });
 
   it("blocks an unverified recipient and sensitive outbound payload", async () => {
@@ -221,6 +349,25 @@ describe("Convex case boundaries", () => {
     };
     await t.mutation(api.cases.createPasted, notice);
     await expect(t.mutation(api.cases.createPasted, notice)).rejects.toThrow("DUPLICATE_NOTICE");
+  });
+
+  it("stores an uploaded screenshot privately with bounded metadata", async () => {
+    const t = convexTest(schema, modules);
+    const image = new Blob([new Uint8Array([137, 80, 78, 71])], { type: "image/png" });
+    const storageId = await t.run(async (ctx) => await ctx.storage.store(image));
+    const created = await t.mutation(api.cases.createScreenshot, {
+      storageId,
+      fileName: "recall.png",
+      mediaType: "image/png",
+      size: image.size,
+    });
+    const result = await t.query(api.cases.get, {
+      publicId: created.publicId,
+      capabilityToken: created.capabilityToken,
+    });
+    expect(result.case.inputKind).toBe("screenshot");
+    expect(result.notices[0]?.rawStorageId).toBe(storageId);
+    expect(result.notices[0]?.attachmentMetadata[0]?.name).toBe("recall.png");
   });
 
   it("deduplicates AgentMail callbacks and stores only sanitized text", async () => {

@@ -36,10 +36,13 @@ export async function extractClaimEnvelope(args: {
   const model = args.model ?? process.env.OPENAI_MODEL ?? "gpt-5-mini";
   const maxAttempts = Math.min(Math.max(args.maxAttempts ?? 2, 1), 2);
   const client = args.parser ?? createParser(args.apiKey);
+  const noticeInstructions = args.imageDataUrl
+    ? `${args.noticeText}\nFor text visible only in the attached image, quote it exactly and use span start=0 and end=0.`
+    : args.noticeText;
   const content: Array<Record<string, string>> = [
     {
       type: "input_text",
-      text: `UNTRUSTED NOTICE START\n${args.noticeText}\nUNTRUSTED NOTICE END`,
+      text: `UNTRUSTED NOTICE START\n${noticeInstructions}\nUNTRUSTED NOTICE END`,
     },
   ];
   if (args.imageDataUrl) content.push({ type: "input_image", image_url: args.imageDataUrl });

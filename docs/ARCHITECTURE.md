@@ -32,7 +32,7 @@ Paste / image / AgentMail forward
 
 ## Frontend
 
-React 19 and Vite render a static, mobile-first SPA. Hash routes make fixture case URLs refresh-safe without a routing dependency. The finished live path will use Convex `useQuery` subscriptions; frontend polling is prohibited. Static files are atomically uploaded through `@convex-dev/static-hosting`.
+React 19 and Vite render a static, mobile-first SPA. Hash routes make fixture and capability case URLs refresh-safe without a routing dependency. The live path uses Convex `useQuery` subscriptions; frontend polling is prohibited. Static files are atomically uploaded through `@convex-dev/static-hosting`.
 
 ## Convex boundaries
 
@@ -51,4 +51,4 @@ No action is initiated from an LLM response. External failures select only `VERI
 
 ## Current implementation status
 
-The development deployment now serves the Vite app publicly, seeds fixtures idempotently, exposes capability-scoped realtime queries, and records a live Firecrawl scrape plus bounded durable manufacturer crawl. OpenAI extraction and AgentMail webhook/send adapters are deployed with safe missing-secret behavior, but real OpenAI and AgentMail events are not claimed until those account credentials are configured.
+The development deployment now serves the Vite app publicly, seeds fixtures idempotently, exposes capability-scoped realtime queries, and records a live Firecrawl scrape plus bounded durable manufacturer crawl. New text or screenshot cases schedule extraction, discover only allowlisted CPSC recall pages through Firecrawl, exact-match identifiers, persist append-only deterministic verdicts, and expose the safe-action preview/approval transaction reactively. OpenAI extraction and AgentMail webhook/send adapters are deployed with safe missing-secret behavior, but real OpenAI and AgentMail events are not claimed until those account credentials are configured.

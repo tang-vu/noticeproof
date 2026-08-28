@@ -243,6 +243,42 @@ export const approveAndSend = mutation({
   },
 });
 
+export const rejectDraft = mutation({
+  args: {
+    publicId: v.string(),
+    capabilityToken: v.optional(v.string()),
+    approvalId: v.id("approvals"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const caseDocument = await requireCaseWriteAccess(ctx, args.publicId, args.capabilityToken);
+    const approval = await ctx.db.get("approvals", args.approvalId);
+    if (!approval || approval.caseId !== caseDocument._id) throw new Error("APPROVAL_NOT_FOUND");
+    if (approval.state !== "pending" || caseDocument.currentState !== "AWAITING_APPROVAL") {
+      throw new Error("APPROVAL_NOT_PENDING");
+    }
+    assertTransition(caseDocument.currentState, "ACTIONABLE");
+    const now = Date.now();
+    await ctx.db.patch(approval._id, { state: "rejected" });
+    await ctx.db.patch(caseDocument._id, {
+      currentState: "ACTIONABLE",
+      nextAction: "Draft cancelled. Review or edit a new message to the verified recipient.",
+      updatedAt: now,
+    });
+    await ctx.db.insert("timelineEvents", {
+      caseId: caseDocument._id,
+      eventType: "approval.rejected",
+      actorType: "consumer",
+      visibility: "private",
+      payloadVersion: "1",
+      summary: "The consumer cancelled the outbound draft before any message was sent.",
+      timestamp: now,
+      idempotencyKey: `approval:${approval._id}:rejected`,
+    });
+    return null;
+  },
+});
+
 export const sendStatus = query({
   args: {
     publicId: v.string(),
