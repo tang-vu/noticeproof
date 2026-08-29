@@ -26,6 +26,7 @@ Status is evidence-based as of 2026-08-29.
 - [ ] Demo video recorded and linked (under three minutes)
 - [ ] Public social post published and linked
 - [ ] Exact VibeApps submission page fields reviewed and submitted
+- [x] Paste-ready social and submission copy prepared in `docs/SOCIAL_POST.md` and `docs/SUBMISSION_COPY.md`
 
 ## Engineering gates
 

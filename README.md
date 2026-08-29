@@ -103,6 +103,8 @@ Deployment requires an authenticated Convex project and configured sponsor crede
 - [Threat model](docs/THREAT_MODEL.md)
 - [Three-minute demo script](docs/DEMO_SCRIPT.md)
 - [Submission checklist](docs/SUBMISSION_CHECKLIST.md)
+- [Paste-ready submission copy](docs/SUBMISSION_COPY.md)
+- [Social launch copy](docs/SOCIAL_POST.md)
 
 Demo video: not recorded yet.
 
