@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { sanitizePlainText } from "../shared/domain/redaction";
+import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
 import { createCapabilityToken, hashCapabilityToken, sha256 } from "./lib/access";
 import { rawRetentionUntil } from "./lib/retention";
@@ -166,6 +167,29 @@ export const onMessageReceived = internalMutation({
       resultJson: JSON.stringify({ publicId, inboxId }),
       createdAt: now,
     });
+    const extractionKey = `openai:extract:${caseId}:agentmail:${messageId}`;
+    await ctx.db.insert("idempotencyKeys", {
+      key: extractionKey,
+      operation: "openai.extract.scheduled",
+      caseId,
+      createdAt: now,
+    });
+    await ctx.db.patch(caseId, {
+      currentState: "EXTRACTING_CLAIMS",
+      nextAction: "Claims are being extracted from the deliberately forwarded notice.",
+      updatedAt: now,
+    });
+    await ctx.db.insert("timelineEvents", {
+      caseId,
+      eventType: "claims.extraction_started",
+      actorType: "system",
+      visibility: "private",
+      payloadVersion: "1",
+      summary: "Schema-constrained claim extraction started for the forwarded notice.",
+      timestamp: now,
+      idempotencyKey: `${extractionKey}:timeline`,
+    });
+    await ctx.scheduler.runAfter(0, internal.openaiExtraction.extract, { caseId });
     return null;
   },
 });

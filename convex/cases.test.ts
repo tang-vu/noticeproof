@@ -2,11 +2,16 @@
 // @vitest-environment edge-runtime
 
 import { convexTest, type TestConvex } from "convex-test";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
+
+afterEach(() => {
+  vi.clearAllTimers();
+  vi.useRealTimers();
+});
 
 async function createActionablePrivateCase(t: TestConvex<typeof schema>) {
   const created = await t.mutation(api.cases.createPasted, {
@@ -371,6 +376,7 @@ describe("Convex case boundaries", () => {
   });
 
   it("deduplicates AgentMail callbacks and stores only sanitized text", async () => {
+    vi.useFakeTimers();
     const t = convexTest(schema, modules);
     const callback = {
       eventId: "evt_inbound_001",
@@ -393,12 +399,15 @@ describe("Convex case boundaries", () => {
       events: await ctx.db.query("timelineEvents").take(10),
     }));
     expect(result.cases).toHaveLength(1);
+    expect(result.cases[0]?.currentState).toBe("EXTRACTING_CLAIMS");
     expect(result.notices).toHaveLength(1);
-    expect(result.events).toHaveLength(1);
+    expect(result.events).toHaveLength(2);
+    expect(result.events.map((event) => event.eventType)).toContain("claims.extraction_started");
     expect(result.notices[0]?.bodyPreview).toBe("Model TEST-100 may be recalled.");
   });
 
   it("attaches an AgentMail reply to the existing trusted thread", async () => {
+    vi.useFakeTimers();
     const t = convexTest(schema, modules);
     await t.mutation(internal.email.onMessageReceived, {
       eventId: "evt_thread_first",
