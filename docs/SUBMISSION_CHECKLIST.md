@@ -31,8 +31,9 @@ Status is evidence-based as of 2026-08-29.
 
 - [x] Unit suites cover transitions, URLs, verdicts, hashes, redaction, approval, and invalid structured output
 - [x] Desktop/mobile Playwright coverage exists
+- [x] Automated axe audits report no serious or critical WCAG findings on landing and hero case
 - [x] Production Vite build succeeds
-- [x] Final `npm run verify` passes: 60 unit/integration checks, production build, and 8 Playwright passes (2 project-specific skips)
+- [x] Final `npm run verify` passes: 65 unit/integration checks, production build, and 12 Playwright passes (4 project-specific skips)
 - [x] Convex reviewer completed after live backend functions exist
 - [x] Duplicate webhook, cross-case access, seed idempotency, retention, missing-key, and evidence-change tests pass
 - [x] Local diff, dependency audit, secret-pattern scan, and Convex query/index patterns reviewed

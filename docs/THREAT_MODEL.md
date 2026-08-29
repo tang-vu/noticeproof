@@ -16,6 +16,7 @@ Protected assets are raw notices/attachments, capability tokens, sponsor keys/we
 | Email header/recipient injection    | Recipient must come from Tier 1/linked Tier 2 evidence; CR/LF is rejected and one mailbox is normalized before payload hashing           | Implemented in `convex/approvals.ts` and tested                       |
 | Webhook spoof/replay/order          | Official AgentMail component verifies the webhook; app callback deduplicates event/message IDs and stores sanitized text only            | Implemented; duplicate callback test passes                           |
 | Broken case access                  | 256-bit random capability; only SHA-256 hash stored; every private query/mutation scopes through the case                                | Implemented; wrong-token and read-only-fixture tests pass             |
+| Forward-code theft/replay           | Separate 96-bit random subject code is hash-indexed, single-use, expires in 24 hours, and grants no read capability                      | Attach, cross-case, and replay tests pass                             |
 | Cross-case subscription leak        | Public fixtures are explicitly allowlisted; all private projections require the matching capability                                      | Implemented and tested                                                |
 | Secret leakage                      | Secrets only in Convex env; `.env*` ignored except names-only example; no raw payload logging                                            | Repository/diff scans pass; OpenAI and AgentMail live paths inspected |
 | PII retention                       | Private storage IDs, seven-day raw retention, hourly bounded cleanup, sanitized public fixtures                                          | Implemented and tested                                                |
@@ -29,6 +30,7 @@ Protected assets are raw notices/attachments, capability tokens, sponsor keys/we
 - Raw HTML is never rendered, even after sanitization.
 - Search finds candidates but never grants authority.
 - A model can extract, align, ask, and explain; it cannot set verdict, tier, recipient, eligibility, or approval.
+- Explanation output is constrained to verdict-specific template IDs and existing rule IDs; TypeScript renders the text and rejects invented references.
 - No autonomous login, payment, refund acceptance, form submission, disposal, or product destruction.
 - Public fixtures contain no actual consumer or private message data.
 

@@ -56,6 +56,9 @@ function LiveCase({ publicId }: { publicId: string }) {
     "Please confirm the next steps and identifiers required for this recall remedy.",
   );
   const [actionStatus, setActionStatus] = useState("");
+  const forwardingSubject =
+    sessionStorage.getItem(`noticeproof:forwarding:${publicId}`) ?? undefined;
+  const forwardingInbox = import.meta.env.VITE_AGENTMAIL_FORWARDING_ADDRESS?.trim();
   const result = useQuery(api.cases.get, {
     publicId,
     ...(capabilityToken ? { capabilityToken } : {}),
@@ -72,6 +75,9 @@ function LiveCase({ publicId }: { publicId: string }) {
   }
 
   const verdict = result.verdicts[0];
+  const explanation = verdict
+    ? result.verdictExplanations.find((item) => item.verdictId === verdict._id)
+    : undefined;
   const sourceById = new Map(result.sources.map((source) => [source._id, source]));
   const verifiedSource = result.sources.find(
     (source) => source.verifiesContact && source.verifiedEmail,
@@ -99,6 +105,53 @@ function LiveCase({ publicId }: { publicId: string }) {
           system state, never a safety verdict.
         </p>
       </section>
+      {result.case.inputKind === "forwarded_email" &&
+      result.notices.length === 0 &&
+      forwardingSubject ? (
+        <section className="live-forward-guide" aria-labelledby="forward-now-title">
+          <div>
+            <p className="eyebrow">One-time tracked forwarding</p>
+            <h2 id="forward-now-title">Forward the notice, then watch this case update live.</h2>
+            <p>
+              Send it to the AgentMail inbox and replace the subject with the exact private subject
+              below. Keep this tab open—Convex will update it without polling.
+            </p>
+          </div>
+          <ol>
+            <li>
+              <span>1</span>
+              <div>
+                <small>TO</small>
+                <strong>{forwardingInbox ?? "AgentMail inbox unavailable"}</strong>
+              </div>
+              <button
+                type="button"
+                disabled={!forwardingInbox}
+                onClick={() => void navigator.clipboard.writeText(forwardingInbox ?? "")}
+              >
+                Copy
+              </button>
+            </li>
+            <li>
+              <span>2</span>
+              <div>
+                <small>SUBJECT — COPY EXACTLY</small>
+                <strong>{forwardingSubject}</strong>
+              </div>
+              <button
+                type="button"
+                onClick={() => void navigator.clipboard.writeText(forwardingSubject)}
+              >
+                Copy
+              </button>
+            </li>
+          </ol>
+          <p className="forward-expiry-note">
+            The one-time match code expires in 24 hours. It is not the capability that unlocks this
+            case.
+          </p>
+        </section>
+      ) : null}
       <div className="live-case-grid">
         {verdict ? (
           <section className="live-panel live-verdict-panel">
@@ -112,6 +165,21 @@ function LiveCase({ publicId }: { publicId: string }) {
                 </span>
               ))}
             </div>
+            {explanation ? (
+              <div className="bounded-explanation">
+                <span>OpenAI-assisted · bounded to stored rules</span>
+                <p>{explanation.text}</p>
+                <small>
+                  References {explanation.referencedRuleIds.join(" · ") || "the verdict rule set"}.
+                  AI cannot alter the verdict, evidence, recipient, or action eligibility.
+                </small>
+              </div>
+            ) : (
+              <p className="explanation-pending">
+                The deterministic result is complete. A bounded consumer explanation may arrive
+                separately.
+              </p>
+            )}
           </section>
         ) : null}
         <section className="live-panel">
@@ -249,7 +317,7 @@ function LiveCase({ publicId }: { publicId: string }) {
                         .then(() => setActionStatus("AgentMail queued the verified new thread."))
                         .catch(() =>
                           setActionStatus(
-                            "Send is still blocked: AgentMail production credentials are not configured.",
+                            "Send remains safely blocked. Refresh the case or retry after checking the current evidence.",
                           ),
                         );
                     }}
@@ -321,6 +389,7 @@ function LiveCase({ publicId }: { publicId: string }) {
 }
 
 export function LiveApp() {
+  const createForwardingSession = useMutation(api.cases.createForwardingSession);
   const createPasted = useMutation(api.cases.createPasted);
   const generateScreenshotUploadUrl = useMutation(api.cases.generateScreenshotUploadUrl);
   const createScreenshot = useMutation(api.cases.createScreenshot);
@@ -329,6 +398,7 @@ export function LiveApp() {
   return (
     <App
       liveStatus={<LiveDeploymentStatus />}
+      onPrepareForwarding={async () => await createForwardingSession({})}
       onSubmitNotice={async (body, screenshot) => {
         const created = screenshot
           ? await (async () => {

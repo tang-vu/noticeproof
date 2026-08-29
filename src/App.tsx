@@ -78,13 +78,16 @@ function Header({ compact = false }: { compact?: boolean }) {
 }
 
 type IntakeResult = { publicId: string; capabilityToken: string };
+type ForwardingSessionResult = IntakeResult & { forwardingSubject: string };
 
 function Landing({
   liveStatus,
   onSubmitNotice,
+  onPrepareForwarding,
 }: {
   liveStatus?: ReactNode;
   onSubmitNotice?: (body: string, screenshot?: File) => Promise<IntakeResult>;
+  onPrepareForwarding?: () => Promise<ForwardingSessionResult>;
 }) {
   const [copied, setCopied] = useState(false);
   const [message, setMessage] = useState("");
@@ -99,6 +102,22 @@ function Landing({
     await navigator.clipboard.writeText(inbox);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
+  };
+
+  const prepareForwarding = async () => {
+    if (!onPrepareForwarding || !inbox) {
+      setStatus("Tracked forwarding is temporarily unavailable. Paste the notice instead.");
+      return;
+    }
+    try {
+      setStatus("Creating a private one-time forwarding session…");
+      const result = await onPrepareForwarding();
+      sessionStorage.setItem(`noticeproof:cap:${result.publicId}`, result.capabilityToken);
+      sessionStorage.setItem(`noticeproof:forwarding:${result.publicId}`, result.forwardingSubject);
+      window.location.hash = `/case/${encodeURIComponent(result.publicId)}`;
+    } catch {
+      setStatus("A tracked forwarding session could not be created. Please retry.");
+    }
   };
 
   const submit = async (event: FormEvent) => {
@@ -246,6 +265,7 @@ function Landing({
                   ref={fileRef}
                   className="visually-hidden"
                   type="file"
+                  aria-label="Upload a recall notice screenshot"
                   accept="image/png,image/jpeg,image/webp"
                   onChange={(event) => {
                     const file = event.target.files?.[0];
@@ -289,6 +309,18 @@ function Landing({
                   {copied ? "Copied" : "Copy"}
                 </button>
               </div>
+              <button
+                className="button forward-session-button wide"
+                type="button"
+                disabled={!inbox || !onPrepareForwarding}
+                onClick={() => void prepareForwarding()}
+              >
+                Start a tracked forward <span aria-hidden="true">→</span>
+              </button>
+              <p className="forward-session-note">
+                We create a one-time subject code so this browser can follow the right private case
+                live. The code expires after 24 hours and cannot open the case by itself.
+              </p>
               <ul>
                 <li>Only messages you choose to forward</li>
                 <li>Attachments stay private and expire</li>
@@ -838,10 +870,12 @@ function Footer() {
 export default function App({
   liveStatus,
   onSubmitNotice,
+  onPrepareForwarding,
   renderLiveCase,
 }: {
   liveStatus?: ReactNode;
   onSubmitNotice?: (body: string, screenshot?: File) => Promise<IntakeResult>;
+  onPrepareForwarding?: () => Promise<ForwardingSessionResult>;
   renderLiveCase?: (publicId: string) => ReactNode;
 }) {
   const slug = useHashRoute();
@@ -851,5 +885,11 @@ export default function App({
   }, [slug]);
   if (item) return <CaseView item={item} />;
   if (slug && renderLiveCase) return renderLiveCase(slug);
-  return <Landing liveStatus={liveStatus} {...(onSubmitNotice ? { onSubmitNotice } : {})} />;
+  return (
+    <Landing
+      liveStatus={liveStatus}
+      {...(onSubmitNotice ? { onSubmitNotice } : {})}
+      {...(onPrepareForwarding ? { onPrepareForwarding } : {})}
+    />
+  );
 }

@@ -1,11 +1,12 @@
 import { FirecrawlClient } from "@firecrawl/firecrawl-convex";
 import { v } from "convex/values";
 import { hashCanonical } from "../shared/domain/hashing";
+import { recordIntegrationProof } from "./integrationProofs";
 import { assertTransition } from "../shared/domain/stateMachine";
 import { parseSafePublicUrl } from "../shared/domain/urlSafety";
 import { verifyNotice } from "../shared/domain/verifier";
 import { components, internal } from "./_generated/api";
-import { internalAction, internalMutation, internalQuery } from "./_generated/server";
+import { env, internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { sha256 } from "./lib/access";
 
 const firecrawl = new FirecrawlClient(components.firecrawl);
@@ -366,7 +367,7 @@ export const persistEvaluation = internalMutation({
       facts,
     });
     const version = caseDocument.currentVerdictVersion + 1;
-    await ctx.db.insert("verdicts", {
+    const verdictId = await ctx.db.insert("verdicts", {
       caseId: args.caseId,
       version,
       code: verdict.code,
@@ -404,6 +405,22 @@ export const persistEvaluation = internalMutation({
       timestamp: now,
       idempotencyKey: `verdict:${args.caseId}:${version}:${evidenceManifestHash}`,
     });
+    if (args.source?.contentHash) {
+      await recordIntegrationProof(ctx, {
+        proofKey: "firecrawl.authority_evidence",
+        sponsor: "Firecrawl",
+        milestone: "Authority evidence acquired",
+        detail: "An official source was fetched, normalized, and content-hashed.",
+        status: "verified",
+        verifiedAt: now,
+      });
+    }
+    if (env.OPENAI_API_KEY) {
+      await ctx.scheduler.runAfter(0, internal.openaiExplanation.generate, {
+        caseId: args.caseId,
+        verdictId,
+      });
+    }
     return null;
   },
 });

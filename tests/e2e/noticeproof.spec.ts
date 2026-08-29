@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 test.beforeEach(async ({ page }) => {
   const errors: string[] = [];
@@ -38,6 +39,18 @@ test("official generic email explains its authority and reaches approval preview
   await expect(page.getByText("Demo approval recorded")).toBeVisible();
 });
 
+test("tracked forwarding keeps the capability in-browser and opens live instructions", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Start a tracked forward" }).click();
+  await expect(
+    page.getByRole("heading", { name: /Forward the notice, then watch this case update live/i }),
+  ).toBeVisible();
+  await expect(page.getByText(/\[NP-[A-F0-9]{24}\]/)).toBeVisible();
+  await expect(page.getByText(/code expires in 24 hours/i)).toBeVisible();
+  expect(await page.evaluate(() => location.hash.startsWith("#/case/np_mail_"))).toBe(true);
+});
+
 test("keyboard navigation reaches intake and evidence controls", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium", "desktop keyboard-order assertion");
   await page.keyboard.press("Tab");
@@ -59,4 +72,34 @@ test("mobile primary flow has no horizontal overflow", async ({ page }, testInfo
   );
   expect(overflow).toBe(false);
   await expect(page.getByRole("button", { name: "Review exact message" })).toBeVisible();
+});
+
+test("landing has no automatically detectable serious WCAG violations", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "single-browser accessibility audit");
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  expect(
+    results.violations.filter((violation) =>
+      ["serious", "critical"].includes(violation.impact ?? ""),
+    ),
+  ).toEqual([]);
+});
+
+test("hero evidence case has no automatically detectable serious WCAG violations", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "single-browser accessibility audit");
+  await page.goto("/#/case/real-recall-unsafe-channel");
+  await expect(page.getByRole("heading", { name: /recall is real/i })).toBeVisible();
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  expect(
+    results.violations.filter((violation) =>
+      ["serious", "critical"].includes(violation.impact ?? ""),
+    ),
+  ).toEqual([]);
 });

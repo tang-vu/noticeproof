@@ -3,16 +3,16 @@
 - **Project:** NoticeProof
 - **Event:** Convex All Gas Hackathon sponsored by OpenAI, Firecrawl, and AgentMail
 - **What it does:** Verifies the claims in a suspicious recall notice against authoritative evidence and switches the consumer to an independently verified contact channel.
-- **Live app:** https://outgoing-snake-653.convex.site (development)
+- **Live app:** https://lovely-eel-809.convex.site
 - **Repo:** https://github.com/tang-vu/noticeproof
 - **Frontend:** Convex static hosting
-- **Convex deployment:** https://outgoing-snake-653.convex.cloud (development)
+- **Convex deployment:** https://lovely-eel-809.convex.cloud (production)
 - **Components:** @convex-dev/static-hosting, @firecrawl/firecrawl-convex, @agentmail/convex
 - **Convex features:** schema, tables, indexes, queries, mutations, actions, HTTP actions, crons, scheduled functions, file storage, realtime queries
 - **Auth:** none
 - **AI models:** gpt-5-mini (configurable with `OPENAI_MODEL`)
 - **Started:** 2026-08-26T14:18:38Z
-- **Last updated:** 2026-08-29T17:15:39+07:00
+- **Last updated:** 2026-08-29T16:34:23Z
 
 ## Log
 
@@ -59,3 +59,7 @@ Deployed NoticeProof to the production Convex deployment and published the stati
 ### 2026-08-29 - ae9c9d6
 
 Completed the signed production inbound proof. A brand-new sanitized message reached the inbox-scoped AgentMail webhook and created exactly one `forwarded_email` case plus one `inbound/received` communication. The authorizing transaction appended `agentmail.message_received` and `claims.extraction_started`; OpenAI persisted one validated ClaimEnvelope with five material claims. The production evidence pipeline then stored one valid Tier 1 `cpsc.gov` recall source that verifies the contact, linked two supporting edges and one contradicting edge, and the deterministic `noticeproof-rules/1.0.0` engine produced `VERIFIED_RECALL_UNSAFE_CHANNEL` version 1 with eligible action `START_VERIFIED_EMAIL`, no missing identifiers, and no blocking reasons. Production sponsor integration is therefore exercised rather than inferred from configuration.
+
+### 2026-08-29 - working tree
+
+Closed the consumer handoff gap for forwarded notices. The landing now creates a one-time tracked forwarding session, keeps the case capability in the browser, gives the consumer a 96-bit expiring subject code, and reactively attaches the first matching AgentMail message to that exact private case; replay and cross-case attachment are covered by Convex integration tests (`convex/cases.ts`, `convex/email.ts`, `convex/cases.test.ts`, `src/LiveApp.tsx`). Added a privacy-safe public integration-proof ledger that records successful AgentMail inbound/delivery, validated OpenAI Structured Output, and content-hashed Firecrawl authority evidence without exposing case identifiers or message data (`convex/integrationProofs.ts`, `src/LiveDeploymentStatus.tsx`). A new development live case also persisted an OpenAI-assisted explanation for `VERIFIED_RECALL_UNSAFE_CHANNEL`: `gpt-5-mini` selected four verdict-allowed templates and referenced only the three stored rule IDs, while TypeScript rendered the final consumer text in a table separate from the append-only verdict (`shared/server/openaiExplanation.ts`, `convex/openaiExplanation.ts`). Automated axe checks report no serious or critical findings on the landing and hero evidence case. `npm run verify` passes with 65 unit/integration checks, a production build, and 12 Playwright passes with 4 project-specific skips; the production dependency audit reports zero vulnerabilities.

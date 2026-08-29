@@ -16,6 +16,9 @@ const schema = defineSchema({
   cases: defineTable({
     publicId: v.string(),
     capabilityHash: v.string(),
+    forwardingCodeHash: v.optional(v.string()),
+    forwardingSessionExpiresAt: v.optional(v.number()),
+    forwardingClaimedAt: v.optional(v.number()),
     inputKind,
     currentState: caseState,
     currentVerdictCode: v.optional(verdictCode),
@@ -33,6 +36,7 @@ const schema = defineSchema({
     fixtureVersion: v.optional(v.string()),
   })
     .index("by_public_id", ["publicId"])
+    .index("by_forwarding_code_hash", ["forwardingCodeHash"])
     .index("by_public_fixture", ["isPublicFixture"])
     .index("by_expiry", ["expiresAt"])
     .index("by_state", ["currentState"])
@@ -82,7 +86,8 @@ const schema = defineSchema({
   })
     .index("by_case_id", ["caseId"])
     .index("by_notice_id", ["noticeId"])
-    .index("by_content_hash", ["contentHash"]),
+    .index("by_content_hash", ["contentHash"])
+    .index("by_validation_status", ["validationStatus"]),
 
   claims: defineTable({
     caseId: v.id("cases"),
@@ -137,6 +142,7 @@ const schema = defineSchema({
   })
     .index("by_case_id", ["caseId"])
     .index("by_case_and_url", ["caseId", "canonicalUrl"])
+    .index("by_status_and_content_hash", ["status", "contentHash"])
     .index("by_crawl_id", ["crawlId"])
     .index("by_discovered_from_source_id", ["discoveredFromSourceId"]),
 
@@ -182,6 +188,21 @@ const schema = defineSchema({
   })
     .index("by_case_id", ["caseId"])
     .index("by_case_and_version", ["caseId", "version"]),
+
+  verdictExplanations: defineTable({
+    caseId: v.id("cases"),
+    verdictId: v.id("verdicts"),
+    verdictVersion: v.number(),
+    model: v.string(),
+    modelResponseId: v.string(),
+    templateIds: v.array(v.string()),
+    referencedRuleIds: v.array(v.string()),
+    text: v.string(),
+    inputHash: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_case_id", ["caseId"])
+    .index("by_verdict_id", ["verdictId"]),
 
   approvals: defineTable({
     caseId: v.id("cases"),
@@ -301,6 +322,22 @@ const schema = defineSchema({
     count: v.number(),
     updatedAt: v.number(),
   }).index("by_scope_action_window", ["scopeHash", "action", "windowStart"]),
+
+  integrationProofs: defineTable({
+    proofKey: v.string(),
+    sponsor: v.union(
+      v.literal("Convex"),
+      v.literal("OpenAI"),
+      v.literal("Firecrawl"),
+      v.literal("AgentMail"),
+    ),
+    milestone: v.string(),
+    detail: v.string(),
+    status: v.union(v.literal("verified"), v.literal("active"), v.literal("retryable")),
+    verifiedAt: v.number(),
+  })
+    .index("by_proof_key", ["proofKey"])
+    .index("by_verified_at", ["verifiedAt"]),
 });
 
 export default schema;

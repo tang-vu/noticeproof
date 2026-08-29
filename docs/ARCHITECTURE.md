@@ -18,7 +18,7 @@ Paste / image / AgentMail forward
               ▼
  Deterministic authority graph + rule engine
               │
-       append-only verdict
+       append-only verdict ── bounded OpenAI template selection
               │
      ┌────────┴────────┐
  clarification/block  actionable → immutable preview → approval transaction
@@ -38,7 +38,9 @@ React 19 and Vite render a static, mobile-first SPA. Hash routes make fixture an
 
 The app schema separates cases, sanitized notice metadata, claim envelopes, normalized claims, sources, evidence edges, verdict versions, approvals, communications, timeline events, receipts, idempotency keys, and rate-limit windows. Every read path has a named index. Component-owned AgentMail and Firecrawl tables remain isolated; application tables store only stable mappings and derived product state.
 
-Public seeded demos are explicitly allowlisted sanitized fixtures. Private cases use a 256-bit capability whose SHA-256 hash is stored; the secret is not placed in server-visible paths or logs. Full authentication is intentionally deferred to preserve a zero-invite public demo, not replaced with client-supplied identity.
+Public seeded demos are explicitly allowlisted sanitized fixtures. Private cases use a 256-bit capability whose SHA-256 hash is stored; the secret is not placed in server-visible paths or logs. A tracked forwarding session adds a separate 96-bit subject code whose hash is indexed for one-time, 24-hour attachment; that code cannot authorize reads and the browser-held capability never enters the email. Full authentication is intentionally deferred to preserve a zero-invite public demo, not replaced with client-supplied identity.
+
+OpenAI explanations are stored separately from append-only verdicts. The model receives only the verdict code plus stored rule IDs/outcomes and can select only verdict-specific template IDs and existing rule IDs. TypeScript rejects out-of-policy selections and renders fixed consumer-language templates, preventing explanation text from introducing new facts or altering authority, recipient, eligibility, or verdict.
 
 ## Side-effect ordering
 

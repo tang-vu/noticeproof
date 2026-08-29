@@ -1,8 +1,10 @@
 import { v } from "convex/values";
 import { sanitizePlainText } from "../shared/domain/redaction";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
 import { createCapabilityToken, hashCapabilityToken, sha256 } from "./lib/access";
+import { recordIntegrationProof } from "./integrationProofs";
 import { rawRetentionUntil } from "./lib/retention";
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -111,23 +113,63 @@ export const onMessageReceived = internalMutation({
       return null;
     }
 
-    const capabilityToken = createCapabilityToken();
-    const publicId = `np_mail_${crypto.randomUUID().replaceAll("-", "")}`;
-    const caseId = await ctx.db.insert("cases", {
-      publicId,
-      capabilityHash: await hashCapabilityToken(capabilityToken),
-      inputKind: "forwarded_email",
-      currentState: "RECEIVED",
-      riskLevel: "unknown",
-      nextAction: "The forwarded notice is waiting for bounded claim extraction.",
-      currentVerdictVersion: 0,
-      createdAt: now,
-      updatedAt: now,
-      expiresAt: now + 30 * 24 * 60 * 60 * 1000,
-      rawRetentionUntil: rawRetentionUntil(now),
-      isDemo: false,
-      isPublicFixture: false,
-    });
+    const forwardingCode = subject.match(/\[NP-([A-F0-9]{24})\]/i)?.[1]?.toUpperCase();
+    const forwardingCodeHash = forwardingCode
+      ? await hashCapabilityToken(forwardingCode)
+      : undefined;
+    const forwardingCase = forwardingCodeHash
+      ? await ctx.db
+          .query("cases")
+          .withIndex("by_forwarding_code_hash", (q) =>
+            q.eq("forwardingCodeHash", forwardingCodeHash),
+          )
+          .unique()
+      : null;
+    if (
+      forwardingCase &&
+      (forwardingCase.forwardingClaimedAt ||
+        !forwardingCase.forwardingSessionExpiresAt ||
+        forwardingCase.forwardingSessionExpiresAt < now ||
+        forwardingCase.currentState !== "RECEIVED")
+    ) {
+      await ctx.db.insert("idempotencyKeys", {
+        key: idempotencyKey,
+        operation: "agentmail.inbound.forwarding_session_rejected",
+        caseId: forwardingCase._id,
+        createdAt: now,
+      });
+      return null;
+    }
+
+    let caseId: Id<"cases">;
+    let publicId: string;
+    if (forwardingCase) {
+      caseId = forwardingCase._id;
+      publicId = forwardingCase.publicId;
+      await ctx.db.patch(caseId, {
+        forwardingClaimedAt: now,
+        nextAction: "The forwarded notice is waiting for bounded claim extraction.",
+        updatedAt: now,
+      });
+    } else {
+      const capabilityToken = createCapabilityToken();
+      publicId = `np_mail_${crypto.randomUUID().replaceAll("-", "")}`;
+      caseId = await ctx.db.insert("cases", {
+        publicId,
+        capabilityHash: await hashCapabilityToken(capabilityToken),
+        inputKind: "forwarded_email",
+        currentState: "RECEIVED",
+        riskLevel: "unknown",
+        nextAction: "The forwarded notice is waiting for bounded claim extraction.",
+        currentVerdictVersion: 0,
+        createdAt: now,
+        updatedAt: now,
+        expiresAt: now + 30 * 24 * 60 * 60 * 1000,
+        rawRetentionUntil: rawRetentionUntil(now),
+        isDemo: false,
+        isPublicFixture: false,
+      });
+    }
     await ctx.db.insert("notices", {
       caseId,
       agentmailInboundId: messageId,
@@ -162,10 +204,20 @@ export const onMessageReceived = internalMutation({
     });
     await ctx.db.insert("idempotencyKeys", {
       key: idempotencyKey,
-      operation: "agentmail.inbound.created_case",
+      operation: forwardingCase
+        ? "agentmail.inbound.attached_forwarding_session"
+        : "agentmail.inbound.created_case",
       caseId,
       resultJson: JSON.stringify({ publicId, inboxId }),
       createdAt: now,
+    });
+    await recordIntegrationProof(ctx, {
+      proofKey: "agentmail.inbound",
+      sponsor: "AgentMail",
+      milestone: "Signed inbound received",
+      detail: "A verified webhook created or attached a private case idempotently.",
+      status: "verified",
+      verifiedAt: now,
     });
     const extractionKey = `openai:extract:${caseId}:agentmail:${messageId}`;
     await ctx.db.insert("idempotencyKeys", {

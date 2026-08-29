@@ -18,6 +18,8 @@ Urgent recall messages can be fake, outdated, incomplete—or describe a real re
 2. Inspect the claim ledger, authority tiers, source domains, ordered rule IDs, and why the unsafe notice link is blocked.
 3. Review the independently recovered recipient and exact redacted payload. The fixture preview cannot silently send mail.
 
+For the live forwarding path, choose **Start a tracked forward** first. NoticeProof creates a one-time expiring subject code and opens the private reactive case before the email leaves your inbox, so the result returns to the same browser without exposing the capability in the email.
+
 The verified-official demo also shows why a generic Gmail address can be trusted when the exact address is explicitly listed in Tier 1 CPSC evidence.
 
 ## Why this is different
@@ -27,7 +29,7 @@ NoticeProof is not a recall feed: its object is a particular notice in an anxiou
 ## Sponsor architecture
 
 - **Convex** is the operational core: typed indexed data, capability-scoped cases, transactional state transitions, component state, storage, HTTP webhooks, schedulers, idempotency, append-only verdicts/timelines/receipts, and reactive UI subscriptions.
-- **OpenAI Responses API** performs strict `ClaimEnvelope` extraction, bounded evidence-language alignment, clarification, and explanation. `OPENAI_MODEL` defaults to `gpt-5-mini` and stays server-side.
+- **OpenAI Responses API** performs strict `ClaimEnvelope` extraction and a separately stored bounded explanation. For explanations, the model may select only allowlisted templates and existing rule IDs; TypeScript renders the final text. `OPENAI_MODEL` defaults to `gpt-5-mini` and stays server-side.
 - **Firecrawl’s Convex component** performs search/scrape and a bounded durable manufacturer-domain crawl whose pages and progress are reactive Convex state. Search position never grants authority.
 - **AgentMail’s Convex component** owns the persistent inbox, verified/deduplicated inbound events, threads, durable delivery, and replies. A send requires a current single-use approval and independently verified recipient.
 
@@ -39,6 +41,7 @@ The components are registered in `convex/convex.config.ts`. The development depl
 - Missing model/lot/serial/UPC/date information produces a clarification state.
 - Only Tier 1 or Tier 1-linked Tier 2 evidence can verify a contact.
 - Raw email HTML is never rendered; URL schemes, credentials, local/private hosts, trackers, punycode, and registrable domains are handled explicitly.
+- Forwarding subject codes are random, single-use, expire after 24 hours, and cannot open a case; the separate 256-bit capability stays in browser session storage.
 - Demo mode must show intended and actual recipients separately. The fixture approval dialog never sends.
 - NoticeProof is not affiliated with CPSC or a manufacturer, does not provide legal advice, and cannot guarantee coverage or a completed remedy.
 
@@ -86,7 +89,7 @@ npm run proof:live -- https://<deployment>.convex.site # paid live sponsor proof
 npm run deploy       # Convex backend + atomic Vite static upload
 ```
 
-`proof:live` submits only a sanitized fixture, waits for the realtime deterministic verdict, and asserts that the safe action uses the independently recovered CPSC contact. Add `--send` after the URL to explicitly approve a controlled AgentMail delivery. It intentionally invokes paid sponsor APIs; demo routing stays visible and never silently contacts the manufacturer.
+`proof:live` submits only a sanitized fixture, waits for the realtime deterministic verdict, and asserts that the safe action uses the independently recovered CPSC contact. Add `--send` after the URL to explicitly approve a controlled AgentMail delivery. It intentionally invokes paid sponsor APIs; demo routing stays visible and never silently contacts the manufacturer. The validation gate also runs axe WCAG checks against the landing and hero evidence case.
 
 Deployment requires an authenticated Convex project and configured sponsor credentials. `@convex-dev/static-hosting` publishes the Vite build at `https://<deployment>.convex.site`.
 

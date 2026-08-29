@@ -1,4 +1,5 @@
 import { AgentMail, type OutboundId } from "@agentmail/convex";
+import { recordIntegrationProof } from "./integrationProofs";
 import { v } from "convex/values";
 import { assertTransition } from "../shared/domain/stateMachine";
 import {
@@ -322,6 +323,16 @@ export const persistOutboundStatus = internalMutation({
         timestamp: now,
         idempotencyKey: `agentmail:${args.outboundId}:${deliveryState}`,
       });
+      if (deliveryState === "delivered") {
+        await recordIntegrationProof(ctx, {
+          proofKey: "agentmail.delivery",
+          sponsor: "AgentMail",
+          milestone: "Controlled delivery confirmed",
+          detail: "A human-approved verified-channel message reached delivered state.",
+          status: "verified",
+          verifiedAt: now,
+        });
+      }
     }
     return null;
   },

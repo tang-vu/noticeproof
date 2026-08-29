@@ -14,6 +14,84 @@ const MAX_NOTICE_LENGTH = 40_000;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const IMAGE_MEDIA_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 
+function createForwardingCode(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(12));
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase();
+}
+
+export const createForwardingSession = mutation({
+  args: {},
+  returns: v.object({
+    publicId: v.string(),
+    capabilityToken: v.string(),
+    forwardingSubject: v.string(),
+  }),
+  handler: async (ctx) => {
+    const now = Date.now();
+    const windowStart = Math.floor(now / 60_000) * 60_000;
+    const rateLimit = await ctx.db
+      .query("rateLimits")
+      .withIndex("by_scope_action_window", (q) =>
+        q
+          .eq("scopeHash", "public-intake")
+          .eq("action", "createForwardingSession")
+          .eq("windowStart", windowStart),
+      )
+      .unique();
+    if (rateLimit && rateLimit.count >= 10) throw new Error("RATE_LIMITED");
+    if (rateLimit) {
+      await ctx.db.patch(rateLimit._id, { count: rateLimit.count + 1, updatedAt: now });
+    } else {
+      await ctx.db.insert("rateLimits", {
+        scopeHash: "public-intake",
+        action: "createForwardingSession",
+        windowStart,
+        count: 1,
+        updatedAt: now,
+      });
+    }
+
+    const capabilityToken = createCapabilityToken();
+    const forwardingCode = createForwardingCode();
+    const publicId = `np_mail_${crypto.randomUUID().replaceAll("-", "")}`;
+    const sessionExpiresAt = now + 24 * 60 * 60 * 1000;
+    const caseId = await ctx.db.insert("cases", {
+      publicId,
+      capabilityHash: await hashCapabilityToken(capabilityToken),
+      forwardingCodeHash: await hashCapabilityToken(forwardingCode),
+      forwardingSessionExpiresAt: sessionExpiresAt,
+      inputKind: "forwarded_email",
+      currentState: "RECEIVED",
+      riskLevel: "unknown",
+      nextAction: "Forward the notice with the private tracking code in its subject.",
+      currentVerdictVersion: 0,
+      createdAt: now,
+      updatedAt: now,
+      expiresAt: now + 30 * 24 * 60 * 60 * 1000,
+      rawRetentionUntil: rawRetentionUntil(now),
+      isDemo: false,
+      isPublicFixture: false,
+    });
+    await ctx.db.insert("timelineEvents", {
+      caseId,
+      eventType: "agentmail.forwarding_session_created",
+      actorType: "consumer",
+      visibility: "private",
+      payloadVersion: "1",
+      summary: "A one-time AgentMail forwarding session was created.",
+      timestamp: now,
+      idempotencyKey: `forwarding-session:${caseId}`,
+    });
+    return {
+      publicId,
+      capabilityToken,
+      forwardingSubject: `[NP-${forwardingCode}] Recall notice for verification`,
+    };
+  },
+});
+
 export const generateScreenshotUploadUrl = mutation({
   args: {},
   returns: v.string(),
@@ -231,6 +309,7 @@ export const get = query({
     sources: v.array(schema.doc("sources")),
     evidenceEdges: v.array(schema.doc("evidenceEdges")),
     verdicts: v.array(schema.doc("verdicts")),
+    verdictExplanations: v.array(schema.doc("verdictExplanations")),
     approvals: v.array(schema.doc("approvals")),
     communications: v.array(schema.doc("communications")),
     timeline: v.array(schema.doc("timelineEvents")),
@@ -244,6 +323,7 @@ export const get = query({
       sources,
       evidenceEdges,
       verdicts,
+      verdictExplanations,
       approvals,
       communications,
       timeline,
@@ -275,6 +355,11 @@ export const get = query({
         .order("desc")
         .take(20),
       ctx.db
+        .query("verdictExplanations")
+        .withIndex("by_case_id", (q) => q.eq("caseId", caseDocument._id))
+        .order("desc")
+        .take(20),
+      ctx.db
         .query("approvals")
         .withIndex("by_case_id", (q) => q.eq("caseId", caseDocument._id))
         .order("desc")
@@ -298,6 +383,7 @@ export const get = query({
       sources,
       evidenceEdges,
       verdicts,
+      verdictExplanations,
       approvals,
       communications,
       timeline,

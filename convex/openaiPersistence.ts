@@ -4,6 +4,7 @@ import { assertTransition } from "../shared/domain/stateMachine";
 import { internal } from "./_generated/api";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { sha256 } from "./lib/access";
+import { recordIntegrationProof } from "./integrationProofs";
 
 export const loadInput = internalQuery({
   args: { caseId: v.id("cases") },
@@ -109,6 +110,14 @@ export const persistSuccess = internalMutation({
       summary: "OpenAI returned a fully validated ClaimEnvelope.",
       timestamp: now,
       idempotencyKey: `openai:${caseDocument._id}:${contentHash}`,
+    });
+    await recordIntegrationProof(ctx, {
+      proofKey: "openai.structured_extraction",
+      sponsor: "OpenAI",
+      milestone: "Structured extraction validated",
+      detail: "A Responses API result passed the versioned ClaimEnvelope schema.",
+      status: "verified",
+      verifiedAt: now,
     });
     assertTransition("CLAIMS_READY", "ACQUIRING_EVIDENCE");
     await ctx.db.patch(caseDocument._id, {

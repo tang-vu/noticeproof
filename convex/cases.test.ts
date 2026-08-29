@@ -375,6 +375,77 @@ describe("Convex case boundaries", () => {
     expect(result.notices[0]?.attachmentMetadata[0]?.name).toBe("recall.png");
   });
 
+  it("attaches a forwarded message to its one-time capability-scoped session", async () => {
+    vi.useFakeTimers();
+    const t = convexTest(schema, modules);
+    const created = await t.mutation(api.cases.createForwardingSession, {});
+    await t.mutation(internal.email.onMessageReceived, {
+      eventId: "evt_tracked_forward",
+      thread: { thread_id: "thread_tracked" },
+      message: {
+        message_id: "message_tracked",
+        inbox_id: "noticeproof@agentmail.to",
+        thread_id: "thread_tracked",
+        from: "Consumer <consumer@example.test>",
+        subject: created.forwardingSubject,
+        extracted_text: "Model TEST-TRACKED may be recalled.",
+      },
+    });
+
+    const result = await t.query(api.cases.get, {
+      publicId: created.publicId,
+      capabilityToken: created.capabilityToken,
+    });
+    expect(result.case.forwardingClaimedAt).toBeTypeOf("number");
+    expect(result.case.currentState).toBe("EXTRACTING_CLAIMS");
+    expect(result.notices).toHaveLength(1);
+    expect(result.notices[0]?.agentmailInboundId).toBe("message_tracked");
+  });
+
+  it("does not cross-attach or reuse one-time forwarding sessions", async () => {
+    vi.useFakeTimers();
+    const t = convexTest(schema, modules);
+    const first = await t.mutation(api.cases.createForwardingSession, {});
+    const second = await t.mutation(api.cases.createForwardingSession, {});
+    const message = {
+      inbox_id: "noticeproof@agentmail.to",
+      from: "Consumer <consumer@example.test>",
+      subject: second.forwardingSubject,
+      extracted_text: "Model SECOND-ONLY may be recalled.",
+    };
+    await t.mutation(internal.email.onMessageReceived, {
+      eventId: "evt_second_session",
+      thread: { thread_id: "thread_second" },
+      message: {
+        ...message,
+        message_id: "message_second",
+        thread_id: "thread_second",
+      },
+    });
+    await t.mutation(internal.email.onMessageReceived, {
+      eventId: "evt_replay_session",
+      thread: { thread_id: "thread_replay" },
+      message: {
+        ...message,
+        message_id: "message_replay",
+        thread_id: "thread_replay",
+      },
+    });
+
+    const firstResult = await t.query(api.cases.get, {
+      publicId: first.publicId,
+      capabilityToken: first.capabilityToken,
+    });
+    const secondResult = await t.query(api.cases.get, {
+      publicId: second.publicId,
+      capabilityToken: second.capabilityToken,
+    });
+    const caseCount = await t.run(async (ctx) => (await ctx.db.query("cases").take(10)).length);
+    expect(firstResult.notices).toHaveLength(0);
+    expect(secondResult.notices).toHaveLength(1);
+    expect(caseCount).toBe(2);
+  });
+
   it("deduplicates AgentMail callbacks and stores only sanitized text", async () => {
     vi.useFakeTimers();
     const t = convexTest(schema, modules);
