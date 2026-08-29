@@ -9,6 +9,7 @@ export const explanationTemplateIdSchema = z.enum([
   "NOTICE_CHANNEL_UNVERIFIED",
   "VERIFIED_CHANNEL_SWITCH",
   "SENSITIVE_REQUEST_BLOCKED",
+  "REMEDY_CONFLICT_BLOCKED",
   "IDENTIFIER_REQUIRED",
   "NO_AUTHORITY_EVIDENCE",
   "RETRYABLE_SYSTEM_FAILURE",
@@ -36,6 +37,8 @@ const TEMPLATE_TEXT: Record<TemplateId, string> = {
     "Use the independently recovered verified contact instead of replying to or clicking the notice.",
   SENSITIVE_REQUEST_BLOCKED:
     "A request for sensitive information through an unverified destination creates a blocking conflict.",
+  REMEDY_CONFLICT_BLOCKED:
+    "The remedy claimed by the notice conflicts with the instructions in the authoritative recall record.",
   IDENTIFIER_REQUIRED:
     "An exact model, lot, serial, UPC, or date identifier is still needed before product scope can be decided.",
   NO_AUTHORITY_EVIDENCE:
@@ -61,10 +64,19 @@ const TEMPLATES_BY_VERDICT: Record<string, TemplateId[]> = {
     "HUMAN_APPROVAL_REQUIRED",
   ],
   POSSIBLE_MATCH_NEEDS_IDENTIFIER: ["OFFICIAL_RECALL_FOUND", "IDENTIFIER_REQUIRED"],
-  CONFLICTING_NOTICE: ["SENSITIVE_REQUEST_BLOCKED", "NOTICE_CHANNEL_UNVERIFIED"],
+  CONFLICTING_NOTICE: [],
   NO_AUTHORITATIVE_EVIDENCE: ["NO_AUTHORITY_EVIDENCE"],
   VERIFICATION_FAILED_RETRYABLE: ["RETRYABLE_SYSTEM_FAILURE"],
 };
+
+function allowedTemplatesFor(verdictCode: string, ruleIds: Set<string>): TemplateId[] {
+  if (verdictCode !== "CONFLICTING_NOTICE") return TEMPLATES_BY_VERDICT[verdictCode] ?? [];
+  return [
+    ...(ruleIds.has("NP-SAFE-001") ? (["SENSITIVE_REQUEST_BLOCKED"] as const) : []),
+    ...(ruleIds.has("NP-REMEDY-001") ? (["REMEDY_CONFLICT_BLOCKED"] as const) : []),
+    ...(ruleIds.has("NP-CHANNEL-002") ? (["NOTICE_CHANNEL_UNVERIFIED"] as const) : []),
+  ];
+}
 
 export async function generateBoundedExplanation(args: {
   verdictCode: string;
@@ -73,9 +85,9 @@ export async function generateBoundedExplanation(args: {
   model: string;
   parser?: ExplanationParser;
 }) {
-  const allowedTemplates = TEMPLATES_BY_VERDICT[args.verdictCode];
-  if (!allowedTemplates?.length) throw new Error("EXPLANATION_VERDICT_UNSUPPORTED");
   const allowedRuleIds = new Set(args.ruleResults.map((rule) => rule.ruleId));
+  const allowedTemplates = allowedTemplatesFor(args.verdictCode, allowedRuleIds);
+  if (!allowedTemplates?.length) throw new Error("EXPLANATION_VERDICT_UNSUPPORTED");
   const client = args.parser ?? createParser(args.apiKey);
   const response = await client.parse({
     model: args.model,

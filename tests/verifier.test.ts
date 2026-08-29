@@ -58,4 +58,34 @@ describe("deterministic verifier", () => {
     });
     expect(verdict.code).toBe("VERIFICATION_FAILED_RETRYABLE");
   });
+
+  it("blocks an explicit remedy contradiction after exact product matching", () => {
+    const verdict = verifyNotice({
+      authoritativeRecallFound: true,
+      exactRecallIdMatch: true,
+      exactProductMatch: true,
+      matchCriticalIdentifierPresent: true,
+      noticeChannelMatchesVerifiedChannel: true,
+      verifiedContactAvailable: true,
+      unsafeSensitiveRequest: false,
+      remedyConflict: true,
+      externalFailure: false,
+      facts: [
+        {
+          id: "remedy-edge",
+          tier: 1,
+          relation: "contradicts",
+          claimType: "remedy",
+          ruleId: "NP-REMEDY-001",
+        },
+      ],
+    });
+    expect(verdict.code).toBe("CONFLICTING_NOTICE");
+    expect(verdict.rules).toContainEqual({
+      ruleId: "NP-REMEDY-001",
+      outcome: "blocked",
+      evidenceIds: ["remedy-edge"],
+    });
+    expect(verdict.eligibleActions).toEqual([]);
+  });
 });

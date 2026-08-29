@@ -58,6 +58,7 @@ export const claimEnvelopeSchema = z
             "login",
             "other",
           ]),
+          confidence: z.number().min(0).max(1),
           span: sourceSpan,
         }),
       )

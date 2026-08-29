@@ -12,7 +12,7 @@
 - **Auth:** none
 - **AI models:** gpt-5-mini (configurable with `OPENAI_MODEL`)
 - **Started:** 2026-08-26T14:18:38Z
-- **Last updated:** 2026-08-29T18:17:00Z
+- **Last updated:** 2026-08-29T18:40:00Z
 
 ## Log
 
@@ -75,3 +75,7 @@ Ran the Convex launch-readiness, authorization, reviewer, runtime-insights, and 
 ### 2026-08-29 - pre-release completion audit
 
 Re-audited the original acceptance contract requirement by requirement and replaced three schema/documentation-only claims with functioning paths. Live verdict creation now transactionally appends a canonical machine-readable evidence receipt; approval consumption and explicit consumer remedy/resolution confirmations append later receipt rows rather than rewriting history. The capability-scoped UI displays notice/claim/evidence/verdict/timeline/optional-approval hash prefixes and downloads JSON that excludes raw notice text, capability tokens, outbound payloads, demo destinations, and component IDs (`convex/lib/receipts.ts`, `convex/evidencePipeline.ts`, `convex/approvals.ts`, `src/LiveApp.tsx`). A bounded six-hour scheduler now rechecks active private cases stale for 24 hours, invalidates pending approval before scheduling external work, and excludes public fixtures from sponsor spend; a daily scheduler records human follow-up after seven days awaiting reply. Hourly maintenance now also revokes server-side capability access when a private case expires. Consumer-only transitions close `AWAITING_REPLY → REMEDY_CONFIRMED → RESOLVED` without ever inferring fulfillment from delivery or reply events. Removed a personal demo address from the reproducible proof script and redacted its output. Convex development compilation passed, 76 unit/integration tests passed, and a new sanitized live run showed five claims, Tier 1 evidence, `VERIFIED_RECALL_UNSAFE_CHANNEL`, the verified contact, and a real `Reproduce what NoticeProof knew` receipt without sending email. These additions are verified on development and are not yet claimed as production-deployed.
+
+### 2026-08-29 - pre-release claim-integrity audit
+
+Closed a semantic persistence gap: every source-spanned ClaimEnvelope field now reaches the reactive claim ledger, including sender, retailer/category, order/date fields, urgency/remedy, physical destination, and sensitive requests with confidence. Added deterministic `NP-REMEDY-001`: it blocks only when a known notice remedy type differs from a non-empty remedy set detected in authoritative evidence; absent or ambiguous remedy language remains unresolved. Contradicting remedy edges carry their own rule and locator instead of being mislabeled as a channel conflict. Bounded OpenAI explanation templates are now derived from exact stored conflict rule IDs, preventing a remedy-only conflict from producing sensitive-request prose. The development deployment compiled the expanded schema, 80 unit/integration tests passed, and a real `gpt-5-mini` extraction produced six material claims (including remedy), Tier 1 evidence, the unchanged expected unsafe-channel verdict, verified contact, and live evidence receipt. No email was sent, and these changes are not yet claimed as production-deployed.

@@ -40,6 +40,7 @@ export const REMEDY_TYPES = [
   "new_instructions",
   "unknown",
 ] as const;
+export type RemedyType = (typeof REMEDY_TYPES)[number];
 
 export const AUTHORITY_TIERS = [1, 2, 3, 4] as const;
 export type AuthorityTier = (typeof AUTHORITY_TIERS)[number];

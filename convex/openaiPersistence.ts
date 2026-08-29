@@ -29,24 +29,38 @@ export const loadInput = internalQuery({
 });
 
 function materialClaims(envelope: ClaimEnvelope) {
+  type ExtractedField = NonNullable<ClaimEnvelope["manufacturer"]>;
   const singular = [
+    ["claimed_sender", envelope.claimedSender],
+    ["retailer", envelope.retailer],
     ["manufacturer", envelope.manufacturer],
     ["product_name", envelope.productName],
+    ["category", envelope.category],
     ["recall_id", envelope.recallId],
     ["hazard", envelope.hazard],
-  ] as const;
+    ["urgency", envelope.urgency],
+    ["remedy", envelope.remedy.detail],
+  ] satisfies Array<[string, ExtractedField | null]>;
   const arrays = [
     ["model", envelope.models],
     ["serial", envelope.serials],
     ["lot", envelope.lots],
     ["upc", envelope.upcs],
+    ["order_number", envelope.orderNumbers],
+    ["purchase_date", envelope.purchaseDates],
+    ["affected_date_range", envelope.affectedDateRanges],
     ["url", envelope.urls],
     ["email", envelope.emails],
     ["phone", envelope.phones],
-  ] as const;
+    ["physical_destination", envelope.physicalDestinations],
+  ] satisfies Array<[string, ExtractedField[]]>;
   return [
     ...singular.flatMap(([claimType, field]) => (field ? [{ claimType, field }] : [])),
     ...arrays.flatMap(([claimType, fields]) => fields.map((field) => ({ claimType, field }))),
+    ...envelope.requestedSensitiveData.map(({ kind, confidence, span }) => ({
+      claimType: "sensitive_request",
+      field: { value: kind, confidence, span },
+    })),
   ];
 }
 
@@ -78,6 +92,7 @@ export const persistSuccess = internalMutation({
       ...(envelope.recallId ? { recallId: envelope.recallId.value } : {}),
       ...(envelope.hazard ? { claimedHazard: envelope.hazard.value } : {}),
       ...(envelope.remedy.detail ? { claimedRemedy: envelope.remedy.detail.value } : {}),
+      claimedRemedyType: envelope.remedy.type,
       requestedSensitiveKinds: envelope.requestedSensitiveData.map((item) => item.kind),
       validationStatus: "valid",
       contentHash,

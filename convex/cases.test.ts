@@ -194,6 +194,108 @@ describe("Convex case boundaries", () => {
     }
   }, 15_000);
 
+  it("persists every source-spanned ClaimEnvelope field into the claim ledger", async () => {
+    vi.useFakeTimers();
+    try {
+      const t = convexTest(schema, modules);
+      const created = await t.mutation(api.cases.createPasted, {
+        subject: "Complete extraction contract",
+        sender: "sender@example.test",
+        body: "A sanitized full-field notice fixture.",
+      });
+      const input = await t.run(async (ctx) => {
+        const caseDocument = await ctx.db
+          .query("cases")
+          .withIndex("by_public_id", (q) => q.eq("publicId", created.publicId))
+          .unique();
+        if (!caseDocument) throw new Error("missing case");
+        const notice = await ctx.db
+          .query("notices")
+          .withIndex("by_case_id", (q) => q.eq("caseId", caseDocument._id))
+          .first();
+        if (!notice) throw new Error("missing notice");
+        await ctx.db.patch(caseDocument._id, { currentState: "EXTRACTING_CLAIMS" });
+        return { caseId: caseDocument._id, noticeId: notice._id };
+      });
+      const field = (value: string) => ({
+        value,
+        confidence: 0.9,
+        span: { start: 0, end: value.length, quote: value },
+      });
+      await t.mutation(internal.openaiPersistence.persistSuccess, {
+        ...input,
+        responseId: "resp_full_contract",
+        model: "test-model",
+        envelopeJson: JSON.stringify({
+          schemaVersion: "claim-envelope/1.0.0",
+          language: "en",
+          noticeType: "recall",
+          claimedSender: field("Recall desk"),
+          parsedSender: { name: "Recall desk", email: "sender@example.test" },
+          retailer: field("Example retailer"),
+          manufacturer: field("Example maker"),
+          productName: field("Example product"),
+          category: field("Toy"),
+          recallId: field("25-999"),
+          models: [field("MODEL-1")],
+          serials: [field("SERIAL-1")],
+          lots: [field("LOT-1")],
+          upcs: [field("012345678901")],
+          orderNumbers: [field("ORDER-1")],
+          purchaseDates: [field("2026-01-02")],
+          affectedDateRanges: [field("January to March 2026")],
+          hazard: field("fire hazard"),
+          urgency: field("act today"),
+          remedy: { type: "refund", detail: field("full refund") },
+          urls: [field("https://unsafe.example/claim")],
+          emails: [field("unsafe@example.test")],
+          phones: [field("+1 555 0100")],
+          physicalDestinations: [field("123 Example Street")],
+          requestedSensitiveData: [
+            {
+              kind: "login",
+              confidence: 0.95,
+              span: { start: 0, end: 5, quote: "login" },
+            },
+          ],
+        }),
+      });
+      const result = await t.query(api.cases.get, {
+        publicId: created.publicId,
+        capabilityToken: created.capabilityToken,
+      });
+      expect(new Set(result.claims.map((claim) => claim.claimType))).toEqual(
+        new Set([
+          "claimed_sender",
+          "retailer",
+          "manufacturer",
+          "product_name",
+          "category",
+          "recall_id",
+          "model",
+          "serial",
+          "lot",
+          "upc",
+          "order_number",
+          "purchase_date",
+          "affected_date_range",
+          "hazard",
+          "urgency",
+          "remedy",
+          "url",
+          "email",
+          "phone",
+          "physical_destination",
+          "sensitive_request",
+        ]),
+      );
+      expect(result.claimEnvelopes[0]?.claimedRemedyType).toBe("refund");
+      await t.finishAllScheduledFunctions(vi.runAllTimers);
+    } finally {
+      vi.useRealTimers();
+    }
+  }, 15_000);
+
   it("persists a deterministic unsafe-channel verdict from exact CPSC evidence", async () => {
     const t = convexTest(schema, modules);
     const evidenceCase = await createEvidenceReadyCase(t);
@@ -263,6 +365,61 @@ describe("Convex case boundaries", () => {
     expect(result.case.currentState).toBe("NO_AUTHORITATIVE_EVIDENCE");
     expect(result.case.currentVerdictCode).toBe("NO_AUTHORITATIVE_EVIDENCE");
     expect(result.case.riskLevel).toBe("unknown");
+  });
+
+  it("turns an authoritative remedy contradiction into a blocked rule result", async () => {
+    const t = convexTest(schema, modules);
+    const evidenceCase = await createEvidenceReadyCase(t);
+    const remedyClaimId = await t.run(async (ctx) => {
+      const envelope = await ctx.db
+        .query("claimEnvelopes")
+        .withIndex("by_case_id", (q) => q.eq("caseId", evidenceCase.caseId))
+        .first();
+      if (!envelope) throw new Error("missing envelope");
+      return await ctx.db.insert("claims", {
+        caseId: evidenceCase.caseId,
+        claimEnvelopeId: envelope._id,
+        claimType: "remedy",
+        rawValue: "full refund",
+        normalizedValue: "full refund",
+        sourceSpan: { start: 0, end: 11, quote: "full refund" },
+        confidence: 1,
+        matchCritical: false,
+      });
+    });
+    await t.mutation(internal.evidencePipeline.persistEvaluation, {
+      caseId: evidenceCase.caseId,
+      claimEnvelopeHash: "claim-envelope-hash",
+      authoritativeRecallFound: true,
+      exactRecallIdMatch: true,
+      exactProductMatch: true,
+      matchCriticalIdentifierPresent: true,
+      noticeChannelMatchesVerifiedChannel: true,
+      unsafeSensitiveRequest: false,
+      remedyConflict: true,
+      source: {
+        canonicalUrl: "https://www.cpsc.gov/Recalls/2025/remedy-fixture",
+        canonicalDomain: "cpsc.gov",
+        title: "Official repair-only CPSC fixture",
+        contentHash: "official-repair-content-hash",
+        verifiedEmail: "recall@example.test",
+        matchedClaimIds: [evidenceCase.modelClaimId],
+        contradictedClaimIds: [remedyClaimId],
+        excerptsByClaimJson: "{}",
+      },
+    });
+    const result = await t.query(api.cases.get, {
+      publicId: evidenceCase.created.publicId,
+      capabilityToken: evidenceCase.created.capabilityToken,
+    });
+    expect(result.case.currentState).toBe("BLOCKED_CONFLICT");
+    expect(result.case.currentVerdictCode).toBe("CONFLICTING_NOTICE");
+    expect(result.verdicts[0]?.ruleResults).toContainEqual(
+      expect.objectContaining({ ruleId: "NP-REMEDY-001", outcome: "blocked" }),
+    );
+    expect(result.evidenceEdges.find((edge) => edge.claimId === remedyClaimId)?.ruleId).toBe(
+      "NP-REMEDY-001",
+    );
   });
 
   it("binds an approval to an authoritative contact and immutable payload", async () => {

@@ -65,4 +65,41 @@ describe("bounded OpenAI verdict explanation", () => {
       }),
     ).rejects.toThrow("EXPLANATION_RULE_NOT_ALLOWED");
   });
+
+  it("allows only the conflict template established by stored rule IDs", async () => {
+    const result = await generateBoundedExplanation({
+      verdictCode: "CONFLICTING_NOTICE",
+      ruleResults: [{ ruleId: "NP-REMEDY-001", outcome: "blocked" }],
+      model: "test-model",
+      parser: {
+        parse: () =>
+          Promise.resolve({
+            id: "response_remedy",
+            output_parsed: {
+              templateIds: ["REMEDY_CONFLICT_BLOCKED"],
+              referencedRuleIds: ["NP-REMEDY-001"],
+            },
+          }),
+      },
+    });
+    expect(result.text).toContain("remedy claimed by the notice conflicts");
+
+    await expect(
+      generateBoundedExplanation({
+        verdictCode: "CONFLICTING_NOTICE",
+        ruleResults: [{ ruleId: "NP-REMEDY-001", outcome: "blocked" }],
+        model: "test-model",
+        parser: {
+          parse: () =>
+            Promise.resolve({
+              id: "response_wrong_conflict",
+              output_parsed: {
+                templateIds: ["SENSITIVE_REQUEST_BLOCKED"],
+                referencedRuleIds: ["NP-REMEDY-001"],
+              },
+            }),
+        },
+      }),
+    ).rejects.toThrow("EXPLANATION_TEMPLATE_NOT_ALLOWED");
+  });
 });

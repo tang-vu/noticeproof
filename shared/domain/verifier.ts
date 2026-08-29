@@ -16,6 +16,7 @@ export type VerificationInput = {
   noticeChannelMatchesVerifiedChannel: boolean;
   verifiedContactAvailable: boolean;
   unsafeSensitiveRequest: boolean;
+  remedyConflict?: boolean;
   externalFailure: boolean;
   facts: VerificationFact[];
 };
@@ -94,6 +95,20 @@ export function verifyNotice(input: VerificationInput): DeterministicVerdict {
     outcome: "pass",
     evidenceIds: idsFor(input.facts, "supports"),
   });
+  if (input.remedyConflict) {
+    rules.push({
+      ruleId: "NP-REMEDY-001",
+      outcome: "blocked",
+      evidenceIds: idsFor(input.facts, "contradicts"),
+    });
+    return result(
+      "CONFLICTING_NOTICE",
+      rules,
+      [],
+      ["The claimed remedy conflicts with the authoritative recall instructions."],
+      [],
+    );
+  }
   if (input.unsafeSensitiveRequest) {
     rules.push({
       ruleId: "NP-SAFE-001",

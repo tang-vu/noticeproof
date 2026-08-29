@@ -1,6 +1,7 @@
 import { FirecrawlClient } from "@firecrawl/firecrawl-convex";
 import { v } from "convex/values";
 import { hashCanonical } from "../shared/domain/hashing";
+import type { RemedyType } from "../shared/domain/constants";
 import { recordIntegrationProof } from "./integrationProofs";
 import { assertTransition } from "../shared/domain/stateMachine";
 import { parseSafePublicUrl } from "../shared/domain/urlSafety";
@@ -17,6 +18,16 @@ const acquisitionInput = v.object({
   claimEnvelopeHash: v.string(),
   recallId: v.optional(v.string()),
   productName: v.optional(v.string()),
+  claimedRemedyType: v.optional(
+    v.union(
+      v.literal("refund"),
+      v.literal("repair"),
+      v.literal("replace"),
+      v.literal("dispose"),
+      v.literal("new_instructions"),
+      v.literal("unknown"),
+    ),
+  ),
   requestedSensitiveKinds: v.array(v.string()),
   claims: v.array(v.object({ id: v.id("claims"), type: v.string(), normalizedValue: v.string() })),
 });
@@ -86,6 +97,19 @@ function verifiedConsumerEmails(text: string): string[] {
   });
 }
 
+function remedyTypesIn(text: string): Set<RemedyType> {
+  const normalizedText = normalized(text);
+  const types = new Set<RemedyType>();
+  if (/\brefund(?:ed|s|ing)?\b/.test(normalizedText)) types.add("refund");
+  if (/\brepair(?:ed|s|ing)?\b/.test(normalizedText)) types.add("repair");
+  if (/\breplac(?:e|ed|ement|ements|ing)\b/.test(normalizedText)) types.add("replace");
+  if (/\b(?:dispose|disposal|discard|destroy)\b/.test(normalizedText)) types.add("dispose");
+  if (/\b(?:new|updated|revised) instructions?\b/.test(normalizedText)) {
+    types.add("new_instructions");
+  }
+  return types;
+}
+
 export const loadAcquisitionInput = internalQuery({
   args: { caseId: v.id("cases") },
   returns: v.union(v.null(), acquisitionInput),
@@ -107,6 +131,7 @@ export const loadAcquisitionInput = internalQuery({
       claimEnvelopeHash: envelope.contentHash,
       ...(envelope.recallId ? { recallId: envelope.recallId } : {}),
       ...(envelope.productName ? { productName: envelope.productName } : {}),
+      ...(envelope.claimedRemedyType ? { claimedRemedyType: envelope.claimedRemedyType } : {}),
       requestedSensitiveKinds: envelope.requestedSensitiveKinds,
       claims: claims.map((claim) => ({
         id: claim._id,
@@ -162,6 +187,7 @@ export const acquireAndEvaluate = internalAction({
       let exactProductMatch = false;
       let matchCriticalIdentifierPresent = false;
       let noticeChannelMatchesVerifiedChannel = false;
+      let remedyConflict = false;
 
       for (const url of urls.slice(0, 3)) {
         const document = await firecrawl.scrape(ctx, url, {
@@ -186,6 +212,13 @@ export const acquireAndEvaluate = internalAction({
           exactTextMatch(markdown, claim.normalizedValue),
         );
         const officialEmails = verifiedConsumerEmails(markdown);
+        const officialRemedyTypes = remedyTypesIn(markdown);
+        remedyConflict = Boolean(
+          input.claimedRemedyType &&
+            input.claimedRemedyType !== "unknown" &&
+            officialRemedyTypes.size > 0 &&
+            !officialRemedyTypes.has(input.claimedRemedyType),
+        );
         const noticeEmails = input.claims
           .filter((claim) => claim.type === "email")
           .map((claim) => claim.normalizedValue.toLowerCase());
@@ -202,13 +235,18 @@ export const acquireAndEvaluate = internalAction({
         });
         noticeChannelMatchesVerifiedChannel =
           noticeEmails.some((email) => officialEmails.includes(email)) || officialUrlMatch;
-        const matchedClaims = input.claims.filter((claim) =>
-          exactTextMatch(markdown, claim.normalizedValue),
+        const matchedClaims = input.claims.filter(
+          (claim) =>
+            !(remedyConflict && claim.type === "remedy") &&
+            exactTextMatch(markdown, claim.normalizedValue),
         );
         const channelClaims = input.claims.filter((claim) => ["email", "url"].includes(claim.type));
         const contradictedClaims = channelClaims.filter(
           (claim) => !matchedClaims.some((matched) => matched.id === claim.id),
         );
+        if (remedyConflict) {
+          contradictedClaims.push(...input.claims.filter((claim) => claim.type === "remedy"));
+        }
         source = {
           canonicalUrl: url,
           canonicalDomain: "cpsc.gov",
@@ -235,6 +273,7 @@ export const acquireAndEvaluate = internalAction({
         matchCriticalIdentifierPresent,
         noticeChannelMatchesVerifiedChannel,
         unsafeSensitiveRequest: input.requestedSensitiveKinds.length > 0,
+        remedyConflict,
         ...(source ? { source } : {}),
       });
     } catch {
@@ -257,6 +296,7 @@ export const persistEvaluation = internalMutation({
     matchCriticalIdentifierPresent: v.boolean(),
     noticeChannelMatchesVerifiedChannel: v.boolean(),
     unsafeSensitiveRequest: v.boolean(),
+    remedyConflict: v.optional(v.boolean()),
     source: v.optional(evaluatedSource),
   },
   returns: v.null(),
@@ -320,13 +360,25 @@ export const persistEvaluation = internalMutation({
             claimId,
             sourceId: id,
             relation,
-            matchMethod: relation === "supports" ? "exact_normalized_text" : "channel_absent",
-            ruleId: relation === "supports" ? "NP-MATCH-001" : "NP-CHANNEL-002",
+            matchMethod:
+              relation === "supports"
+                ? "exact_normalized_text"
+                : claim.claimType === "remedy"
+                  ? "normalized_remedy_conflict"
+                  : "channel_absent",
+            ruleId:
+              relation === "supports"
+                ? "NP-MATCH-001"
+                : claim.claimType === "remedy"
+                  ? "NP-REMEDY-001"
+                  : "NP-CHANNEL-002",
             locator: args.source.canonicalUrl,
             excerpt:
               typeof excerpts[claimId] === "string"
                 ? excerpts[claimId].slice(0, 500)
-                : "The claimed channel does not appear in the authoritative record.",
+                : claim.claimType === "remedy"
+                  ? "The authoritative record names a different remedy type."
+                  : "The claimed channel does not appear in the authoritative record.",
             createdAt: now,
           });
           facts.push({
@@ -334,7 +386,12 @@ export const persistEvaluation = internalMutation({
             tier: 1,
             relation,
             claimType: claim.claimType,
-            ruleId: relation === "supports" ? "NP-MATCH-001" : "NP-CHANNEL-002",
+            ruleId:
+              relation === "supports"
+                ? "NP-MATCH-001"
+                : claim.claimType === "remedy"
+                  ? "NP-REMEDY-001"
+                  : "NP-CHANNEL-002",
           });
         }
       }
@@ -349,6 +406,7 @@ export const persistEvaluation = internalMutation({
       noticeChannelMatchesVerifiedChannel: args.noticeChannelMatchesVerifiedChannel,
       verifiedContactAvailable: Boolean(args.source?.verifiedEmail),
       unsafeSensitiveRequest: args.unsafeSensitiveRequest,
+      remedyConflict: Boolean(args.remedyConflict),
       externalFailure: false,
       facts,
     });

@@ -40,6 +40,14 @@ export const noticeType = v.union(
   v.literal("safety_warning"),
   v.literal("unknown"),
 );
+export const remedyType = v.union(
+  v.literal("refund"),
+  v.literal("repair"),
+  v.literal("replace"),
+  v.literal("dispose"),
+  v.literal("new_instructions"),
+  v.literal("unknown"),
+);
 
 export const riskLevel = v.union(
   v.literal("low"),

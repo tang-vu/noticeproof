@@ -80,6 +80,16 @@ const schema = defineSchema({
     recallId: v.optional(v.string()),
     claimedHazard: v.optional(v.string()),
     claimedRemedy: v.optional(v.string()),
+    claimedRemedyType: v.optional(
+      v.union(
+        v.literal("refund"),
+        v.literal("repair"),
+        v.literal("replace"),
+        v.literal("dispose"),
+        v.literal("new_instructions"),
+        v.literal("unknown"),
+      ),
+    ),
     requestedSensitiveKinds: v.array(v.string()),
     validationStatus: v.union(v.literal("valid"), v.literal("invalid"), v.literal("retryable")),
     extractionErrorCode: v.optional(v.string()),

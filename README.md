@@ -29,7 +29,7 @@ NoticeProof is not a recall feed: its object is a particular notice in an anxiou
 ## Sponsor architecture
 
 - **Convex** is the operational core: typed indexed data, capability-scoped cases, transactional state transitions, component state, storage, HTTP webhooks, schedulers, idempotency, append-only verdicts/timelines/receipts, and reactive UI subscriptions.
-- **OpenAI Responses API** performs strict `ClaimEnvelope` extraction and a separately stored bounded explanation. For explanations, the model may select only allowlisted templates and existing rule IDs; TypeScript renders the final text. `OPENAI_MODEL` defaults to `gpt-5-mini` and stays server-side.
+- **OpenAI Responses API** performs strict `ClaimEnvelope` extraction and a separately stored bounded explanation. Every source-spanned material field reaches the claim ledger. For explanations, the model may select only templates established by the exact stored rule IDs; TypeScript renders the final text. `OPENAI_MODEL` defaults to `gpt-5-mini` and stays server-side.
 - **Firecrawl’s Convex component** performs search/scrape and a bounded durable manufacturer-domain crawl whose pages and progress are reactive Convex state. Search position never grants authority.
 - **AgentMail’s Convex component** owns the persistent inbox, verified/deduplicated inbound events, threads, durable delivery, and replies. A send requires a current single-use approval and independently verified recipient.
 
