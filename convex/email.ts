@@ -67,6 +67,49 @@ export const onMessageReceived = internalMutation({
       return null;
     }
 
+    const existingThread = await ctx.db
+      .query("communications")
+      .withIndex("by_agentmail_thread_id", (q) => q.eq("agentmailThreadId", threadId))
+      .first();
+    if (existingThread) {
+      const caseDocument = await ctx.db.get("cases", existingThread.caseId);
+      if (!caseDocument) throw new Error("AGENTMAIL_CASE_MISSING");
+      await ctx.db.insert("communications", {
+        caseId: caseDocument._id,
+        agentmailThreadId: threadId,
+        agentmailMessageId: messageId,
+        direction: "inbound",
+        deliveryState: "received",
+        redactedSummary: body.slice(0, 500),
+        attachmentMetadata: [],
+        receivedAt: now,
+        createdAt: now,
+      });
+      await ctx.db.patch(caseDocument._id, {
+        nextAction:
+          "A reply arrived on the trusted AgentMail thread. Review it before confirming the remedy.",
+        updatedAt: now,
+      });
+      await ctx.db.insert("timelineEvents", {
+        caseId: caseDocument._id,
+        eventType: "agentmail.reply_received",
+        actorType: "agentmail",
+        visibility: "private",
+        payloadVersion: "1",
+        summary: "AgentMail attached an inbound reply to the existing trusted thread.",
+        timestamp: now,
+        idempotencyKey,
+      });
+      await ctx.db.insert("idempotencyKeys", {
+        key: idempotencyKey,
+        operation: "agentmail.inbound.attached_reply",
+        caseId: caseDocument._id,
+        resultJson: JSON.stringify({ publicId: caseDocument.publicId, inboxId }),
+        createdAt: now,
+      });
+      return null;
+    }
+
     const capabilityToken = createCapabilityToken();
     const publicId = `np_mail_${crypto.randomUUID().replaceAll("-", "")}`;
     const caseId = await ctx.db.insert("cases", {

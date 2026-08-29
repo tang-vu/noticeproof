@@ -7,6 +7,7 @@ export default defineConfig({
   build: { sourcemap: true },
   test: {
     environment: "jsdom",
+    testTimeout: 15_000,
     setupFiles: ["./src/test/setup.ts"],
     exclude: ["tests/e2e/**", "node_modules/**"],
     coverage: { reporter: ["text", "json-summary"] },

@@ -6,8 +6,15 @@ import {
   redactSensitiveText,
   sanitizePlainText,
 } from "../shared/domain/redaction";
-import { components } from "./_generated/api";
-import { env, mutation, query } from "./_generated/server";
+import { components, internal } from "./_generated/api";
+import {
+  env,
+  internalAction,
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from "./_generated/server";
 import { requireCaseAccess, requireCaseWriteAccess, sha256 } from "./lib/access";
 
 const agentmail = new AgentMail(components.agentmail);
@@ -239,7 +246,138 @@ export const approveAndSend = mutation({
       timestamp: now,
       idempotencyKey: `agentmail:${outboundId}:queued`,
     });
+    await ctx.scheduler.runAfter(1_000, internal.approvals.syncOutboundStatus, {
+      caseId: caseDocument._id,
+      outboundId,
+    });
     return { outboundId, state: "AWAITING_REPLY" as const };
+  },
+});
+
+export const listOutboundSyncCandidates = internalQuery({
+  args: {},
+  returns: v.array(v.object({ caseId: v.id("cases"), outboundId: v.string() })),
+  handler: async (ctx) => {
+    const [queued, sent] = await Promise.all([
+      ctx.db
+        .query("communications")
+        .withIndex("by_delivery_state", (q) => q.eq("deliveryState", "queued"))
+        .take(20),
+      ctx.db
+        .query("communications")
+        .withIndex("by_delivery_state", (q) => q.eq("deliveryState", "sent"))
+        .take(20),
+    ]);
+    return [...queued, ...sent].flatMap((communication) =>
+      communication.outboundId
+        ? [{ caseId: communication.caseId, outboundId: communication.outboundId }]
+        : [],
+    );
+  },
+});
+
+export const persistOutboundStatus = internalMutation({
+  args: {
+    caseId: v.id("cases"),
+    outboundId: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("sent"),
+      v.literal("delivered"),
+      v.literal("bounced"),
+      v.literal("complained"),
+      v.literal("rejected"),
+      v.literal("failed"),
+    ),
+    agentmailMessageId: v.optional(v.string()),
+    threadId: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const communication = await ctx.db
+      .query("communications")
+      .withIndex("by_outbound_id", (q) => q.eq("outboundId", args.outboundId))
+      .unique();
+    if (!communication || communication.caseId !== args.caseId) return null;
+    const deliveryState = args.status === "pending" ? "queued" : args.status;
+    const now = Date.now();
+    const changed = communication.deliveryState !== deliveryState;
+    await ctx.db.patch(communication._id, {
+      deliveryState,
+      ...(args.agentmailMessageId ? { agentmailMessageId: args.agentmailMessageId } : {}),
+      ...(args.threadId ? { agentmailThreadId: args.threadId } : {}),
+      ...(["sent", "delivered"].includes(deliveryState) && !communication.sentAt
+        ? { sentAt: now }
+        : {}),
+      ...(deliveryState === "delivered" ? { deliveredAt: now } : {}),
+    });
+    if (changed) {
+      await ctx.db.insert("timelineEvents", {
+        caseId: args.caseId,
+        eventType: `agentmail.${deliveryState}`,
+        actorType: "agentmail",
+        visibility: "private",
+        payloadVersion: "1",
+        summary: `AgentMail updated the controlled delivery to ${deliveryState}.`,
+        timestamp: now,
+        idempotencyKey: `agentmail:${args.outboundId}:${deliveryState}`,
+      });
+    }
+    return null;
+  },
+});
+
+export const syncOutboundStatus = internalAction({
+  args: { caseId: v.id("cases"), outboundId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const status = await ctx.runQuery(internal.approvals.readOutboundStatus, {
+      outboundId: args.outboundId,
+    });
+    if (!status) return null;
+    await ctx.runMutation(internal.approvals.persistOutboundStatus, {
+      ...args,
+      status: status.status,
+      ...(status.agentmailMessageId ? { agentmailMessageId: status.agentmailMessageId } : {}),
+      ...(status.threadId ? { threadId: status.threadId } : {}),
+    });
+    return null;
+  },
+});
+
+export const readOutboundStatus = internalQuery({
+  args: { outboundId: v.string() },
+  returns: v.union(
+    v.null(),
+    v.object({
+      status: v.union(
+        v.literal("pending"),
+        v.literal("sent"),
+        v.literal("delivered"),
+        v.literal("bounced"),
+        v.literal("complained"),
+        v.literal("rejected"),
+        v.literal("failed"),
+      ),
+      agentmailMessageId: v.union(v.string(), v.null()),
+      threadId: v.union(v.string(), v.null()),
+      errorMessage: v.union(v.string(), v.null()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    return await agentmail.status(ctx, args.outboundId as OutboundId);
+  },
+});
+
+export const syncPendingOutbounds = internalAction({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const candidates = await ctx.runQuery(internal.approvals.listOutboundSyncCandidates, {});
+    for (const candidate of candidates) {
+      await ctx.runAction(internal.approvals.syncOutboundStatus, candidate);
+    }
+    return null;
   },
 });
 

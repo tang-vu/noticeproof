@@ -231,6 +231,8 @@ const schema = defineSchema({
       v.literal("sent"),
       v.literal("delivered"),
       v.literal("bounced"),
+      v.literal("complained"),
+      v.literal("rejected"),
       v.literal("failed"),
       v.literal("received"),
     ),
@@ -244,6 +246,7 @@ const schema = defineSchema({
     createdAt: v.number(),
   })
     .index("by_case_id", ["caseId"])
+    .index("by_delivery_state", ["deliveryState"])
     .index("by_outbound_id", ["outboundId"])
     .index("by_agentmail_message_id", ["agentmailMessageId"])
     .index("by_agentmail_thread_id", ["agentmailThreadId"]),

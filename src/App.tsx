@@ -64,13 +64,13 @@ function Header({ compact = false }: { compact?: boolean }) {
   return (
     <header className={compact ? "site-header compact" : "site-header"}>
       <a className="brand" href="#/" aria-label="NoticeProof home">
-        <Mark /> NoticeProof
+        <Mark /> <span>NoticeProof</span>
       </a>
       <nav aria-label="Primary navigation">
         <a href="#how-it-works">How it works</a>
         <a href="#privacy">Privacy</a>
         <a className="nav-action" href="#intake">
-          Verify a notice
+          Verify a notice <span aria-hidden="true">↗</span>
         </a>
       </nav>
     </header>
@@ -133,7 +133,9 @@ function Landing({
               <span className="live-dot" /> Independent recall verification
             </p>
             <h1>
-              Don’t click the recall. <em>Prove it.</em>
+              Don’t click
+              <br />
+              the recall. <em>Prove it.</em>
             </h1>
             <p className="hero-lede">
               Forward a recall notice. NoticeProof checks each claim against authoritative evidence,
@@ -148,54 +150,73 @@ function Landing({
               </a>
             </div>
             <p className="privacy-line">
-              No inbox access. No tracking pixels. You deliberately forward only the notice you want
-              checked.
+              <span aria-hidden="true">✓</span> No inbox access
+              <span aria-hidden="true">✓</span> No tracking pixels
+              <span aria-hidden="true">✓</span> Private by design
             </p>
           </div>
-          <aside className="proof-card" aria-label="Example claim verification">
-            <div className="mail-heading">
-              <div>
-                <span className="mini-label">Forwarded notice</span>
-                <strong>Safety recall — action required</strong>
+          <div className="proof-stage">
+            <div className="orbit orbit-one" aria-hidden="true" />
+            <div className="orbit orbit-two" aria-hidden="true" />
+            <span className="proof-coordinate coordinate-one" aria-hidden="true">
+              EVIDENCE / 01
+            </span>
+            <span className="proof-coordinate coordinate-two" aria-hidden="true">
+              CHAIN SECURED
+            </span>
+            <aside className="proof-card" aria-label="Example claim verification">
+              <div className="scan-line" aria-hidden="true" />
+              <div className="proof-card-top">
+                <span>
+                  <i /> Verification live
+                </span>
+                <code>NP–25–459</code>
               </div>
-              <span className="fixture-pill">Demo fixture</span>
-            </div>
-            <div className="claim-row">
-              <span className="claim-icon ok">✓</span>
-              <div>
-                <small>PRODUCT CLAIM</small>
-                <strong>Paris Hilton Mini Beauty Fridge</strong>
-                <p>Exact CPSC record match</p>
+              <div className="mail-heading">
+                <div>
+                  <span className="mini-label">Forwarded notice</span>
+                  <strong>Safety recall — action required</strong>
+                </div>
+                <span className="fixture-pill">Demo fixture</span>
               </div>
-            </div>
-            <div className="claim-row">
-              <span className="claim-icon ok">✓</span>
-              <div>
-                <small>RECALL CLAIM</small>
-                <strong>Fire and burn hazard</strong>
-                <p>Supported by CPSC 25-459</p>
+              <div className="claim-row">
+                <span className="claim-icon ok">✓</span>
+                <div>
+                  <small>PRODUCT CLAIM</small>
+                  <strong>Paris Hilton Mini Beauty Fridge</strong>
+                  <p>Exact CPSC record match</p>
+                </div>
               </div>
-            </div>
-            <div className="claim-row danger">
-              <span className="claim-icon no">×</span>
-              <div>
-                <small>CONTACT CLAIM</small>
-                <strong>epoca-refund.example</strong>
-                <p>Not listed by CPSC or linked manufacturer evidence</p>
+              <div className="claim-row">
+                <span className="claim-icon ok">✓</span>
+                <div>
+                  <small>RECALL CLAIM</small>
+                  <strong>Fire and burn hazard</strong>
+                  <p>Supported by CPSC 25-459</p>
+                </div>
               </div>
-            </div>
-            <div className="mini-verdict">
-              <span>!</span>
-              <div>
-                <small>NOTICEPROOF VERDICT</small>
-                <strong>Real recall. Unsafe channel.</strong>
+              <div className="claim-row danger">
+                <span className="claim-icon no">×</span>
+                <div>
+                  <small>CONTACT CLAIM</small>
+                  <strong>epoca-refund.example</strong>
+                  <p>Not listed by CPSC or linked manufacturer evidence</p>
+                </div>
               </div>
-            </div>
-          </aside>
+              <div className="mini-verdict">
+                <span>!</span>
+                <div>
+                  <small>NOTICEPROOF VERDICT</small>
+                  <strong>Real recall. Unsafe channel.</strong>
+                </div>
+                <i aria-hidden="true">03/03</i>
+              </div>
+            </aside>
+          </div>
         </section>
 
         <section className="trust-strip" aria-label="Evidence workflow">
-          <span>Powered by</span>
+          <span>Independent evidence stack</span>
           <strong>Convex</strong>
           <i /> <strong>OpenAI</strong>
           <i /> <strong>Firecrawl</strong>
@@ -206,6 +227,7 @@ function Landing({
 
         <section className="intake-section" id="intake">
           <div className="section-heading">
+            <p className="section-index">01 / Private intake</p>
             <p className="kicker">Start with the message—not its links</p>
             <h2>Send one notice. Keep your inbox private.</h2>
           </div>
@@ -278,6 +300,7 @@ function Landing({
 
         <section className="demo-section" id="how-it-works">
           <div className="section-heading">
+            <p className="section-index">02 / Evidence lab</p>
             <p className="kicker">Three outcomes worth distinguishing</p>
             <h2>Try a case. Inspect every decision.</h2>
             <p>
@@ -292,7 +315,15 @@ function Landing({
           </div>
         </section>
 
-        <section className="principles" id="privacy">
+        <section className="principles-heading" id="privacy">
+          <p className="section-index">03 / Built-in safeguards</p>
+          <h2>
+            Trust is a system.
+            <br />
+            <em>Not a feeling.</em>
+          </h2>
+        </section>
+        <section className="principles">
           <div>
             <span>01</span>
             <h3>AI structures. Rules decide.</h3>

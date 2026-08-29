@@ -5,6 +5,47 @@ import type { Id } from "../convex/_generated/dataModel";
 import App from "./App";
 import { LiveDeploymentStatus } from "./LiveDeploymentStatus";
 
+function AgentMailDelivery({
+  publicId,
+  capabilityToken,
+  outboundId,
+  intendedRecipient,
+  actualRecipient,
+}: {
+  publicId: string;
+  capabilityToken?: string;
+  outboundId: string;
+  intendedRecipient?: string;
+  actualRecipient?: string;
+}) {
+  const status = useQuery(api.approvals.sendStatus, {
+    publicId,
+    ...(capabilityToken ? { capabilityToken } : {}),
+    outboundId,
+  });
+
+  return (
+    <section className="live-panel live-delivery-panel" aria-live="polite">
+      <p className="eyebrow">AgentMail delivery · realtime</p>
+      <h2>{status?.status?.toUpperCase() ?? "QUEUED"}</h2>
+      <p>
+        Intended verified channel: <strong>{intendedRecipient ?? "Unavailable"}</strong>
+      </p>
+      {actualRecipient && actualRecipient !== intendedRecipient ? (
+        <p className="demo-routing-note">
+          Demo delivery destination: <strong>{actualRecipient}</strong>
+        </p>
+      ) : null}
+      <small>
+        {status?.threadId
+          ? `Thread ${status.threadId}`
+          : "Waiting for AgentMail to assign the trusted thread."}
+      </small>
+      {status?.errorMessage ? <p role="alert">Delivery error: {status.errorMessage}</p> : null}
+    </section>
+  );
+}
+
 function LiveCase({ publicId }: { publicId: string }) {
   const capabilityToken = sessionStorage.getItem(`noticeproof:cap:${publicId}`) ?? undefined;
   const createDraft = useMutation(api.approvals.createDraft);
@@ -36,6 +77,9 @@ function LiveCase({ publicId }: { publicId: string }) {
     (source) => source.verifiesContact && source.verifiedEmail,
   );
   const pendingApproval = result.approvals.find((approval) => approval.state === "pending");
+  const outboundCommunication = result.communications.find(
+    (communication) => communication.direction === "outbound" && communication.outboundId,
+  );
 
   return (
     <main className="live-case-shell">
@@ -130,6 +174,39 @@ function LiveCase({ publicId }: { publicId: string }) {
             ))}
           </ol>
         </section>
+        {outboundCommunication?.outboundId ? (
+          <AgentMailDelivery
+            publicId={publicId}
+            {...(capabilityToken ? { capabilityToken } : {})}
+            outboundId={outboundCommunication.outboundId}
+            {...(outboundCommunication.intendedRecipient
+              ? { intendedRecipient: outboundCommunication.intendedRecipient }
+              : {})}
+            {...(outboundCommunication.actualRecipient
+              ? { actualRecipient: outboundCommunication.actualRecipient }
+              : {})}
+          />
+        ) : null}
+        {result.communications.length ? (
+          <section className="live-panel live-thread-panel" aria-live="polite">
+            <p className="eyebrow">Trusted AgentMail thread</p>
+            <h2>{result.communications.length} messages and delivery events</h2>
+            <ol className="live-communication-list">
+              {[...result.communications].reverse().map((communication) => (
+                <li key={communication._id}>
+                  <div>
+                    <strong>
+                      {communication.direction === "inbound" ? "Reply received" : "Sent"}
+                    </strong>
+                    <span>{communication.deliveryState.toUpperCase()}</span>
+                  </div>
+                  <p>{communication.redactedSummary}</p>
+                  <small>{new Date(communication.createdAt).toLocaleTimeString()}</small>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ) : null}
         {verifiedSource &&
         (result.case.currentState === "ACTIONABLE" ||
           result.case.currentState === "AWAITING_APPROVAL") ? (

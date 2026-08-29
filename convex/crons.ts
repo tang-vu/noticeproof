@@ -10,4 +10,11 @@ crons.interval(
   {},
 );
 
+crons.interval(
+  "sync active AgentMail deliveries",
+  { minutes: 1 },
+  internal.approvals.syncPendingOutbounds,
+  {},
+);
+
 export default crons;

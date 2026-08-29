@@ -1,6 +1,7 @@
 import { chromium } from "playwright";
 
 const liveUrl = process.argv[2];
+const shouldSend = process.argv.includes("--send");
 if (!liveUrl) {
   throw new Error("Usage: node scripts/liveHeroProof.mjs https://<deployment>.convex.site");
 }
@@ -14,6 +15,7 @@ const notice = [
   "The notice directs consumers to continue at the unverified URL",
   "https://epoca-refund.example/claim.",
   "This is a sanitized NoticeProof live-proof fixture.",
+  `Fixture nonce: np-live-${Date.now()}.`,
 ].join(" ");
 
 const terminalStates = new Set([
@@ -30,7 +32,14 @@ try {
   await page.goto(liveUrl, { waitUntil: "networkidle" });
   await page.getByLabel("Paste the email or text message").fill(notice);
   await page.getByRole("button", { name: /Verify this notice/ }).click();
-  await page.waitForURL(/#\/case\//, { timeout: 15_000 });
+  try {
+    await page.waitForURL(/#\/case\//, { timeout: 30_000 });
+  } catch (error) {
+    const intakeStatus = ((await page.locator(".form-status").first().textContent()) ?? "").trim();
+    throw new Error(`Intake did not create a case: ${intakeStatus || "no UI error"}`, {
+      cause: error,
+    });
+  }
   console.log(`CASE_URL=${page.url()}`);
 
   let lastState = "";
@@ -72,6 +81,41 @@ try {
     throw new Error(
       `Expected independently verified recall@epoca.com action, received ${safeAction}`,
     );
+  }
+
+  if (shouldSend) {
+    await page.getByRole("button", { name: "Review exact payload" }).click();
+    const demoRouting = page.locator(".demo-routing-note");
+    await demoRouting.waitFor({ state: "visible", timeout: 10_000 });
+    const demoText = (await demoRouting.textContent()) ?? "";
+    if (!demoText.includes("tangvu421@gmail.com")) {
+      throw new Error(`Controlled demo routing is missing: ${demoText}`);
+    }
+    await page.getByRole("button", { name: "Approve exact payload" }).click();
+    await page.getByText("AgentMail delivery · realtime").waitFor({
+      state: "visible",
+      timeout: 15_000,
+    });
+    const deliveryHeading = page.locator(".live-delivery-panel h2");
+    let delivery = "";
+    let previousDelivery = "";
+    const deliveryDeadline = Date.now() + 90_000;
+    while (Date.now() < deliveryDeadline) {
+      delivery = ((await deliveryHeading.textContent()) ?? "").trim();
+      if (delivery && delivery !== previousDelivery) {
+        console.log(`AGENTMAIL_STATUS=${delivery}`);
+        previousDelivery = delivery;
+      }
+      if (["SENT", "DELIVERED"].includes(delivery)) break;
+      if (["FAILED", "BOUNCED", "REJECTED"].includes(delivery)) {
+        throw new Error(`AgentMail terminated with ${delivery}`);
+      }
+      await page.waitForTimeout(1_000);
+    }
+    if (!["SENT", "DELIVERED"].includes(delivery)) {
+      throw new Error(`AgentMail did not leave ${delivery || "unknown"} within 90 seconds`);
+    }
+    console.log("DEMO_DESTINATION=tangvu421@gmail.com");
   }
 } finally {
   await browser.close();

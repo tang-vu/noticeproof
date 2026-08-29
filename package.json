@@ -5,6 +5,7 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
+    "postinstall": "patch-package",
     "dev": "vite",
     "dev:convex": "convex dev",
     "build": "tsc -b && vite build",
@@ -48,6 +49,7 @@
     "eslint-plugin-react-refresh": "0.4.20",
     "globals": "16.3.0",
     "jsdom": "26.1.0",
+    "patch-package": "^8.0.1",
     "prettier": "3.6.2",
     "typescript": "5.9.2",
     "typescript-eslint": "8.41.0",

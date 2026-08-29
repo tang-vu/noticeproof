@@ -10,7 +10,7 @@ NoticeProof verifies the claims in a suspicious recall notice against authoritat
 
 Urgent recall messages can be fake, outdated, incomplete—or describe a real recall while substituting an unsafe link. NoticeProof decomposes the exact message into claims, finds the matching CPSC record and authority-linked manufacturer evidence, evaluates exact identifiers and contact details with deterministic rules, then requires approval before starting a new email thread through AgentMail.
 
-**Live development demo:** https://outgoing-snake-653.convex.site — public, capability-scoped, and hosted through Convex static hosting. Convex realtime, OpenAI structured extraction, and Firecrawl search/scrape/crawl have been exercised live; AgentMail remains credential-gated and is labeled accordingly.
+**Live development demo:** https://outgoing-snake-653.convex.site — public, capability-scoped, and hosted through Convex static hosting. Convex realtime, OpenAI structured extraction, Firecrawl search/scrape/crawl, and a human-approved controlled AgentMail delivery have all been exercised live.
 
 ## Three-step demo
 
@@ -31,7 +31,7 @@ NoticeProof is not a recall feed: its object is a particular notice in an anxiou
 - **Firecrawl’s Convex component** performs search/scrape and a bounded durable manufacturer-domain crawl whose pages and progress are reactive Convex state. Search position never grants authority.
 - **AgentMail’s Convex component** owns the persistent inbox, verified/deduplicated inbound events, threads, durable delivery, and replies. A send requires a current single-use approval and independently verified recipient.
 
-The components are registered in `convex/convex.config.ts`. The development deployment proves Convex realtime, validated OpenAI extraction, and a bounded Firecrawl crawl. AgentMail adapters are deployed and integration-tested, but a real inbound/send/reply event is not claimed until its account credentials are configured.
+The components are registered in `convex/convex.config.ts`. The development deployment proves Convex realtime, validated OpenAI extraction, a bounded Firecrawl crawl, and AgentMail delivery to the explicitly labeled demo destination. A real forwarded-notice and reply round trip remains a separate acceptance item until exercised end to end.
 
 ## Safety and limits
 
@@ -86,7 +86,7 @@ npm run proof:live -- https://<deployment>.convex.site # paid live sponsor proof
 npm run deploy       # Convex backend + atomic Vite static upload
 ```
 
-`proof:live` submits only a sanitized fixture, waits for the realtime deterministic verdict, and asserts that the safe action uses the independently recovered CPSC contact. It intentionally invokes paid OpenAI and Firecrawl APIs.
+`proof:live` submits only a sanitized fixture, waits for the realtime deterministic verdict, and asserts that the safe action uses the independently recovered CPSC contact. Add `--send` after the URL to explicitly approve a controlled AgentMail delivery. It intentionally invokes paid sponsor APIs; demo routing stays visible and never silently contacts the manufacturer.
 
 Deployment requires an authenticated Convex project and configured sponsor credentials. `@convex-dev/static-hosting` publishes the Vite build at `https://<deployment>.convex.site`.
 
