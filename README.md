@@ -10,7 +10,7 @@ NoticeProof verifies the claims in a suspicious recall notice against authoritat
 
 Urgent recall messages can be fake, outdated, incomplete—or describe a real recall while substituting an unsafe link. NoticeProof decomposes the exact message into claims, finds the matching CPSC record and authority-linked manufacturer evidence, evaluates exact identifiers and contact details with deterministic rules, then requires approval before starting a new email thread through AgentMail.
 
-**Live production demo:** https://lovely-eel-809.convex.site — public, capability-scoped, and hosted through Convex static hosting. Production AgentMail intake, Convex realtime, OpenAI structured extraction, Firecrawl evidence acquisition, and deterministic verification have been exercised live; controlled AgentMail delivery and reply attachment are also proven on the development deployment.
+**Live production demo:** https://lovely-eel-809.convex.site — public, capability-scoped, and hosted through Convex static hosting. Production AgentMail intake, Convex realtime, OpenAI structured extraction and bounded explanation, Firecrawl evidence acquisition, and deterministic verification have been exercised live; controlled AgentMail delivery and reply attachment are also proven on the development deployment.
 
 ## Three-step demo
 
@@ -33,7 +33,7 @@ NoticeProof is not a recall feed: its object is a particular notice in an anxiou
 - **Firecrawl’s Convex component** performs search/scrape and a bounded durable manufacturer-domain crawl whose pages and progress are reactive Convex state. Search position never grants authority.
 - **AgentMail’s Convex component** owns the persistent inbox, verified/deduplicated inbound events, threads, durable delivery, and replies. A send requires a current single-use approval and independently verified recipient.
 
-The components are registered in `convex/convex.config.ts`. The development deployment proves the full sponsor path: a distinct AgentMail message created one forwarded-email case, OpenAI persisted a validated ClaimEnvelope, Firecrawl-backed CPSC evidence produced a deterministic unsafe-channel verdict, an approved message reached the explicitly labeled demo destination, and signed replies attached to the original trusted thread.
+The components are registered in `convex/convex.config.ts`. Production visibly exposes privacy-safe proof of signed AgentMail intake, OpenAI extraction and bounded explanation, Firecrawl-backed authority evidence, and Convex realtime state. The development deployment additionally proves controlled delivery and reply attachment: an approved message reached the explicitly labeled demo destination, and signed replies attached to the original trusted thread.
 
 ## Safety and limits
 

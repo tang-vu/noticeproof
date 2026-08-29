@@ -15,6 +15,7 @@ Status is evidence-based as of 2026-08-29.
 - [x] Strict OpenAI Responses extraction boundary and deterministic rule engine
 - [x] Convex generated bindings and successful development push
 - [x] Real AgentMail inbound event creates one case mapping
+- [x] One-time tracked forwarding attaches to the browser-held private case and rejects replay
 - [x] Real OpenAI extraction persisted after validation
 - [x] Real Firecrawl scrape/crawl with reactive progress
 - [x] Current approval transaction drives controlled AgentMail send and delivery
@@ -22,6 +23,7 @@ Status is evidence-based as of 2026-08-29.
 - [x] Production secrets and inbox-scoped AgentMail webhook configured
 - [x] Production demo cases seeded idempotently
 - [x] Public production `convex.site` URL tested in a fresh browser context
+- [x] Production sponsor-proof panel displays privacy-safe live milestones
 - [x] Repository changes committed and pushed to `main`
 - [ ] Demo video recorded and linked (under three minutes)
 - [ ] Public social post published and linked

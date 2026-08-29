@@ -12,7 +12,7 @@
 - **Auth:** none
 - **AI models:** gpt-5-mini (configurable with `OPENAI_MODEL`)
 - **Started:** 2026-08-26T14:18:38Z
-- **Last updated:** 2026-08-29T16:34:23Z
+- **Last updated:** 2026-08-29T17:11:15Z
 
 ## Log
 
@@ -63,3 +63,7 @@ Completed the signed production inbound proof. A brand-new sanitized message rea
 ### 2026-08-29 - 5a27408
 
 Closed the consumer handoff gap for forwarded notices. The landing now creates a one-time tracked forwarding session, keeps the case capability in the browser, gives the consumer a 96-bit expiring subject code, and reactively attaches the first matching AgentMail message to that exact private case; replay and cross-case attachment are covered by Convex integration tests (`convex/cases.ts`, `convex/email.ts`, `convex/cases.test.ts`, `src/LiveApp.tsx`). Added a privacy-safe public integration-proof ledger that records successful AgentMail inbound/delivery, validated OpenAI Structured Output, and content-hashed Firecrawl authority evidence without exposing case identifiers or message data (`convex/integrationProofs.ts`, `src/LiveDeploymentStatus.tsx`). A new development live case also persisted an OpenAI-assisted explanation for `VERIFIED_RECALL_UNSAFE_CHANNEL`: `gpt-5-mini` selected four verdict-allowed templates and referenced only the three stored rule IDs, while TypeScript rendered the final consumer text in a table separate from the append-only verdict (`shared/server/openaiExplanation.ts`, `convex/openaiExplanation.ts`). Automated axe checks report no serious or critical findings on the landing and hero evidence case. `npm run verify` passes with 65 unit/integration checks, a production build, and 12 Playwright passes with 4 project-specific skips; the production dependency audit reports zero vulnerabilities.
+
+### 2026-08-29 - 19d7ea0
+
+Deployed the tracked-forwarding, sponsor-proof, bounded-explanation, accessibility, and UI release to the production backend and `https://lovely-eel-809.convex.site`. Convex schema validation passed, added seven indexes without deleting any, and static hosting published the new four-file bundle atomically. A production backfill recorded only the three sponsor milestones supported by production history; it intentionally did not claim controlled AgentMail delivery, whose evidence remains development-only. A fresh sanitized production case then reached `VERIFIED_RECALL_UNSAFE_CHANNEL` with five claims, one authoritative source, and the independently recovered contact without sending email. The follow-on privacy-safe proof query confirmed that `gpt-5-mini` also created the bounded rule-grounded explanation. A new browser context loaded three demos and all visible Convex/OpenAI/Firecrawl/AgentMail proof cards, opened the hero case without overflow, and recorded zero console errors.
