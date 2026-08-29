@@ -17,4 +17,18 @@ crons.interval(
   {},
 );
 
+crons.interval(
+  "recheck stale active recall evidence",
+  { hours: 6 },
+  internal.maintenance.scheduleEvidenceRechecks,
+  {},
+);
+
+crons.interval(
+  "remind cases awaiting verified-channel replies",
+  { hours: 24 },
+  internal.maintenance.scheduleFollowupReminders,
+  {},
+);
+
 export default crons;

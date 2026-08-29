@@ -16,7 +16,7 @@ Urgent recall messages can be fake, outdated, incomplete—or describe a real re
 
 1. Open **Real recall · unsafe channel**. The product and CPSC recall match, but the notice destination does not.
 2. Inspect the claim ledger, authority tiers, source domains, ordered rule IDs, and why the unsafe notice link is blocked.
-3. Review the independently recovered recipient and exact redacted payload. The fixture preview cannot silently send mail.
+3. Review the independently recovered recipient and exact redacted payload, then download the evidence receipt. The fixture preview cannot silently send mail.
 
 For the live forwarding path, choose **Start a tracked forward** first. NoticeProof creates a one-time expiring subject code and opens the private reactive case before the email leaves your inbox, so the result returns to the same browser without exposing the capability in the email.
 
@@ -42,7 +42,9 @@ The components are registered in `convex/convex.config.ts`. Production visibly e
 - Only Tier 1 or Tier 1-linked Tier 2 evidence can verify a contact.
 - Raw email HTML is never rendered; URL schemes, credentials, local/private hosts, trackers, punycode, and registrable domains are handled explicitly.
 - Forwarding subject codes are random, single-use, expire after 24 hours, and cannot open a case; the separate 256-bit capability stays in browser session storage.
+- Private capability access is revoked after case expiry; raw content has separate bounded retention cleanup. Active live cases receive scheduled evidence rechecks that invalidate stale approval.
 - Demo mode must show intended and actual recipients separately. The fixture approval dialog never sends.
+- A sent message or reply never marks a remedy complete; only the consumer can confirm instructions and resolve their case, with each step appended to a new receipt.
 - NoticeProof is not affiliated with CPSC or a manufacturer, does not provide legal advice, and cannot guarantee coverage or a completed remedy.
 
 See [Threat model](docs/THREAT_MODEL.md) and [Evidence model](docs/EVIDENCE_MODEL.md).

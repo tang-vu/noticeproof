@@ -4,12 +4,15 @@ import {
   createCapabilityToken,
   hashCapabilityToken,
   requireCaseAccess,
+  requireCaseWriteAccess,
   sha256,
 } from "./lib/access";
 import { rawRetentionUntil } from "./lib/retention";
+import { appendEvidenceReceipt } from "./lib/receipts";
 import { caseState, verdictCode } from "./model/validators";
 import schema from "./schema";
 import { sanitizePlainText } from "../shared/domain/redaction";
+import { assertTransition } from "../shared/domain/stateMachine";
 
 const MAX_NOTICE_LENGTH = 40_000;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -314,6 +317,7 @@ export const get = query({
     approvals: v.array(schema.doc("approvals")),
     communications: v.array(schema.doc("communications")),
     timeline: v.array(schema.doc("timelineEvents")),
+    evidenceReceipts: v.array(schema.doc("evidenceReceipts")),
   }),
   handler: async (ctx, args) => {
     const caseDocument = await requireCaseAccess(ctx, args.publicId, args.capabilityToken);
@@ -328,6 +332,7 @@ export const get = query({
       approvals,
       communications,
       timeline,
+      evidenceReceipts,
     ] = await Promise.all([
       ctx.db
         .query("notices")
@@ -375,6 +380,11 @@ export const get = query({
         .withIndex("by_case_and_timestamp", (q) => q.eq("caseId", caseDocument._id))
         .order("desc")
         .take(100),
+      ctx.db
+        .query("evidenceReceipts")
+        .withIndex("by_case_id", (q) => q.eq("caseId", caseDocument._id))
+        .order("desc")
+        .take(20),
     ]);
     return {
       case: caseDocument,
@@ -388,6 +398,7 @@ export const get = query({
       approvals,
       communications,
       timeline,
+      evidenceReceipts,
     };
   },
 });
@@ -413,5 +424,49 @@ export const listPublicDemos = query({
       ...(currentVerdictCode ? { currentVerdictCode } : {}),
       updatedAt,
     }));
+  },
+});
+
+export const updateResolution = mutation({
+  args: {
+    publicId: v.string(),
+    capabilityToken: v.optional(v.string()),
+    action: v.union(v.literal("confirm_remedy"), v.literal("resolve")),
+  },
+  returns: v.object({ state: caseState }),
+  handler: async (ctx, args) => {
+    const caseDocument = await requireCaseWriteAccess(ctx, args.publicId, args.capabilityToken);
+    const nextState = args.action === "confirm_remedy" ? "REMEDY_CONFIRMED" : "RESOLVED";
+    assertTransition(caseDocument.currentState, nextState);
+    const now = Date.now();
+    await ctx.db.patch(caseDocument._id, {
+      currentState: nextState,
+      nextAction:
+        nextState === "REMEDY_CONFIRMED"
+          ? "You confirmed the remedy instructions. Mark resolved only after your human process is complete."
+          : "You marked this case resolved. NoticeProof does not independently claim the remedy was fulfilled.",
+      updatedAt: now,
+    });
+    await ctx.db.insert("timelineEvents", {
+      caseId: caseDocument._id,
+      eventType:
+        nextState === "REMEDY_CONFIRMED" ? "remedy.consumer_confirmed" : "case.consumer_resolved",
+      actorType: "consumer",
+      visibility: "private",
+      payloadVersion: "1",
+      summary:
+        nextState === "REMEDY_CONFIRMED"
+          ? "The consumer confirmed receiving usable remedy instructions."
+          : "The consumer marked their own case resolved.",
+      timestamp: now,
+      idempotencyKey: `case:${caseDocument._id}:${nextState}:${now}`,
+    });
+    await appendEvidenceReceipt(
+      ctx,
+      caseDocument._id,
+      nextState === "REMEDY_CONFIRMED" ? "remedy_confirmed" : "case_resolved",
+      now,
+    );
+    return { state: nextState } as const;
   },
 });

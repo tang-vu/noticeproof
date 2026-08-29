@@ -17,6 +17,7 @@ import {
   query,
 } from "./_generated/server";
 import { requireCaseAccess, requireCaseWriteAccess, sha256 } from "./lib/access";
+import { appendEvidenceReceipt } from "./lib/receipts";
 
 const agentmail = new AgentMail(components.agentmail);
 const ACTIONABLE_VERDICTS = new Set([
@@ -247,6 +248,7 @@ export const approveAndSend = mutation({
       timestamp: now,
       idempotencyKey: `agentmail:${outboundId}:queued`,
     });
+    await appendEvidenceReceipt(ctx, caseDocument._id, "approval_consumed", now);
     await ctx.scheduler.runAfter(1_000, internal.approvals.syncOutboundStatus, {
       caseId: caseDocument._id,
       outboundId,

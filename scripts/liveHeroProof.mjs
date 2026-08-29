@@ -68,11 +68,18 @@ try {
       .textContent()
       .catch(() => "")) ?? ""
   ).trim();
+  const receipt = (
+    (await page
+      .locator(".live-receipt-panel h2")
+      .textContent()
+      .catch(() => "")) ?? ""
+  ).trim();
 
   console.log(`VERDICT=${verdict}`);
   console.log(`CLAIMS=${claims}`);
   console.log(`EVIDENCE=${evidence}`);
   console.log(`SAFE_ACTION=${safeAction}`);
+  console.log(`RECEIPT=${receipt}`);
 
   if (verdict !== "VERIFIED RECALL UNSAFE CHANNEL") {
     throw new Error(`Expected VERIFIED RECALL UNSAFE CHANNEL, received ${verdict || "no verdict"}`);
@@ -82,14 +89,17 @@ try {
       `Expected independently verified recall@epoca.com action, received ${safeAction}`,
     );
   }
+  if (receipt !== "Reproduce what NoticeProof knew") {
+    throw new Error(`Expected a live append-only evidence receipt, received ${receipt || "none"}`);
+  }
 
   if (shouldSend) {
     await page.getByRole("button", { name: "Review exact payload" }).click();
     const demoRouting = page.locator(".demo-routing-note");
     await demoRouting.waitFor({ state: "visible", timeout: 10_000 });
-    const demoText = (await demoRouting.textContent()) ?? "";
-    if (!demoText.includes("tangvu421@gmail.com")) {
-      throw new Error(`Controlled demo routing is missing: ${demoText}`);
+    const demoText = ((await demoRouting.textContent()) ?? "").trim();
+    if (!demoText.startsWith("Demo mode routes delivery to")) {
+      throw new Error("Controlled demo routing is not explicitly labeled.");
     }
     await page.getByRole("button", { name: "Approve exact payload" }).click();
     await page.getByText("AgentMail delivery · realtime").waitFor({
@@ -115,7 +125,7 @@ try {
     if (!["SENT", "DELIVERED"].includes(delivery)) {
       throw new Error(`AgentMail did not leave ${delivery || "unknown"} within 90 seconds`);
     }
-    console.log("DEMO_DESTINATION=tangvu421@gmail.com");
+    console.log("DEMO_DESTINATION=controlled_and_redacted");
   }
 } finally {
   await browser.close();

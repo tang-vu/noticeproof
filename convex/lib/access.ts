@@ -28,6 +28,7 @@ export async function requireCaseAccess(
 
   if (!caseDocument) throw new Error("CASE_NOT_FOUND");
   if (caseDocument.isPublicFixture) return caseDocument;
+  if (caseDocument.accessRevokedAt) throw new Error("CASE_EXPIRED");
   if (!capabilityToken) throw new Error("CASE_ACCESS_DENIED");
 
   const candidate = await hashCapabilityToken(capabilityToken);

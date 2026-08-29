@@ -27,7 +27,7 @@ Paste / image / AgentMail forward
                                      AgentMail durable new thread
                                                   │
                                                   ▼
-                                  reactive delivery/reply/timeline/receipt
+                         reactive delivery/reply â†’ human closure â†’ versioned receipts
 ```
 
 ## Frontend
@@ -39,6 +39,8 @@ React 19 and Vite render a static, mobile-first SPA. Hash routes make fixture an
 The app schema separates cases, sanitized notice metadata, claim envelopes, normalized claims, sources, evidence edges, verdict versions, approvals, communications, timeline events, receipts, idempotency keys, and rate-limit windows. Every read path has a named index. Component-owned AgentMail and Firecrawl tables remain isolated; application tables store only stable mappings and derived product state.
 
 Public seeded demos are explicitly allowlisted sanitized fixtures. Private cases use a 256-bit capability whose SHA-256 hash is stored; the secret is not placed in server-visible paths or logs. A tracked forwarding session adds a separate 96-bit subject code whose hash is indexed for one-time, 24-hour attachment; that code cannot authorize reads and the browser-held capability never enters the email. Full authentication is intentionally deferred to preserve a zero-invite public demo, not replaced with client-supplied identity.
+
+An hourly indexed maintenance job revokes private capability access after the case expiry and separately purges retained raw content. A six-hour job schedules bounded stale-evidence rechecks for active private cases, and a daily job records human follow-up reminders for trusted threads awaiting replies. Public fixtures are excluded from sponsor-consuming scheduled work.
 
 OpenAI explanations are stored separately from append-only verdicts. The model receives only the verdict code plus stored rule IDs/outcomes and can select only verdict-specific template IDs and existing rule IDs. TypeScript rejects out-of-policy selections and renders fixed consumer-language templates, preventing explanation text from introducing new facts or altering authority, recipient, eligibility, or verdict.
 

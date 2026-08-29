@@ -5,6 +5,18 @@ import type { Id } from "../convex/_generated/dataModel";
 import App from "./App";
 import { LiveDeploymentStatus } from "./LiveDeploymentStatus";
 
+function downloadLiveReceipt(publicId: string, machineJson: string) {
+  const blob = new Blob([JSON.stringify(JSON.parse(machineJson) as unknown, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${publicId}-evidence-receipt.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function AgentMailDelivery({
   publicId,
   capabilityToken,
@@ -51,6 +63,8 @@ function LiveCase({ publicId }: { publicId: string }) {
   const createDraft = useMutation(api.approvals.createDraft);
   const approveAndSend = useMutation(api.approvals.approveAndSend);
   const rejectDraft = useMutation(api.approvals.rejectDraft);
+  const retryExtraction = useMutation(api.extraction.start);
+  const updateResolution = useMutation(api.cases.updateResolution);
   const [subject, setSubject] = useState("Request for verified recall remedy instructions");
   const [body, setBody] = useState(
     "Please confirm the next steps and identifiers required for this recall remedy.",
@@ -86,6 +100,7 @@ function LiveCase({ publicId }: { publicId: string }) {
   const outboundCommunication = result.communications.find(
     (communication) => communication.direction === "outbound" && communication.outboundId,
   );
+  const latestReceipt = result.evidenceReceipts[0];
 
   return (
     <main className="live-case-shell">
@@ -150,6 +165,34 @@ function LiveCase({ publicId }: { publicId: string }) {
             The one-time match code expires in 24 hours. It is not the capability that unlocks this
             case.
           </p>
+        </section>
+      ) : null}
+      {result.case.currentState === "VERIFICATION_FAILED_RETRYABLE" ? (
+        <section className="live-retry-panel" role="alert">
+          <div>
+            <p className="eyebrow">Temporary verification failure</p>
+            <h2>No safety conclusion was produced.</h2>
+            <p>
+              Retry starts a new bounded extraction and evidence pass. Existing timeline events
+              remain append-only.
+            </p>
+            {actionStatus ? <p role="status">{actionStatus}</p> : null}
+          </div>
+          <button
+            className="button primary"
+            type="button"
+            onClick={() => {
+              setActionStatus("Retrying bounded verification…");
+              void retryExtraction({
+                publicId,
+                ...(capabilityToken ? { capabilityToken } : {}),
+              })
+                .then(() => setActionStatus("Verification retry started."))
+                .catch(() => setActionStatus("Retry remains unavailable. Please try again later."));
+            }}
+          >
+            Retry verification
+          </button>
         </section>
       ) : null}
       <div className="live-case-grid">
@@ -242,6 +285,50 @@ function LiveCase({ publicId }: { publicId: string }) {
             ))}
           </ol>
         </section>
+        {latestReceipt ? (
+          <section className="live-panel live-receipt-panel">
+            <div>
+              <p className="eyebrow">Append-only evidence receipt</p>
+              <h2>Reproduce what NoticeProof knew</h2>
+              <p>{latestReceipt.humanSummary}</p>
+            </div>
+            <dl>
+              <div>
+                <dt>Claim envelope</dt>
+                <dd>{latestReceipt.claimEnvelopeHash.slice(0, 16)}…</dd>
+              </div>
+              <div>
+                <dt>Evidence manifest</dt>
+                <dd>{latestReceipt.evidenceManifestHash.slice(0, 16)}…</dd>
+              </div>
+              <div>
+                <dt>Verdict</dt>
+                <dd>{latestReceipt.verdictHash.slice(0, 16)}…</dd>
+              </div>
+              <div>
+                <dt>Timeline</dt>
+                <dd>{latestReceipt.timelineHash.slice(0, 16)}…</dd>
+              </div>
+              {latestReceipt.approvalHash ? (
+                <div>
+                  <dt>Consumed approval</dt>
+                  <dd>{latestReceipt.approvalHash.slice(0, 16)}…</dd>
+                </div>
+              ) : null}
+            </dl>
+            <button
+              className="button secondary"
+              type="button"
+              onClick={() => downloadLiveReceipt(publicId, latestReceipt.machineJson)}
+            >
+              Download machine-readable JSON ↓
+            </button>
+            <small>
+              Raw notice text, capability tokens, outbound payloads, and demo destinations are
+              excluded.
+            </small>
+          </section>
+        ) : null}
         {outboundCommunication?.outboundId ? (
           <AgentMailDelivery
             publicId={publicId}
@@ -273,6 +360,48 @@ function LiveCase({ publicId }: { publicId: string }) {
                 </li>
               ))}
             </ol>
+          </section>
+        ) : null}
+        {result.case.currentState === "AWAITING_REPLY" ||
+        result.case.currentState === "REMEDY_CONFIRMED" ? (
+          <section className="live-panel live-resolution-panel">
+            <p className="eyebrow">Human-confirmed closure</p>
+            <h2>
+              {result.case.currentState === "AWAITING_REPLY"
+                ? "Did you receive usable remedy instructions?"
+                : "Is your own remedy process complete?"}
+            </h2>
+            <p>
+              NoticeProof records your declaration only. A sent email or received reply never proves
+              that a refund, repair, replacement, return, or disposal was completed.
+            </p>
+            <button
+              className="button secondary"
+              type="button"
+              onClick={() => {
+                const action =
+                  result.case.currentState === "AWAITING_REPLY" ? "confirm_remedy" : "resolve";
+                setActionStatus("Recording your confirmation in the append-only timeline…");
+                void updateResolution({
+                  publicId,
+                  ...(capabilityToken ? { capabilityToken } : {}),
+                  action,
+                })
+                  .then(() => setActionStatus("Your confirmation was recorded with a new receipt."))
+                  .catch(() =>
+                    setActionStatus("The case state changed. Review it before retrying."),
+                  );
+              }}
+            >
+              {result.case.currentState === "AWAITING_REPLY"
+                ? "Confirm instructions received"
+                : "Mark my case resolved"}
+            </button>
+            {actionStatus ? (
+              <p className="form-status" role="status">
+                {actionStatus}
+              </p>
+            ) : null}
           </section>
         ) : null}
         {verifiedSource &&

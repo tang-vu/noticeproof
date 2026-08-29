@@ -36,3 +36,7 @@ Codes distinguish official channel, real recall/unsafe channel, missing identifi
 ## Receipt
 
 The receipt hashes notice, claim envelope, verdict, evidence manifest, optional approval, and visible timeline. Canonical JSON recursively sorts object keys while preserving ordered arrays. The JSON export states whether it came from a sanitized fixture or live data and never includes raw notice content, capability tokens, secrets, or unnecessary PII.
+
+Live receipts are persisted transactionally at `verdict_created`, `approval_consumed`, `remedy_confirmed`, and `case_resolved`. Each later receipt is a new row rather than a mutation of history. The capability-scoped UI displays hash prefixes and downloads the complete machine-readable JSON; intended/actual payload bodies and private component IDs are excluded.
+
+Active non-fixture cases are rechecked after 24 hours by a bounded six-hour scheduler. Any pending approval is expired before the case commits back to `ACQUIRING_EVIDENCE`; only then is the external acquisition action scheduled. Cases awaiting a trusted-thread reply receive a bounded human follow-up reminder after seven days.

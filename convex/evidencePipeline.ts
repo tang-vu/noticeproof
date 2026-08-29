@@ -8,6 +8,7 @@ import { verifyNotice } from "../shared/domain/verifier";
 import { components, internal } from "./_generated/api";
 import { env, internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { sha256 } from "./lib/access";
+import { appendEvidenceReceipt } from "./lib/receipts";
 
 const firecrawl = new FirecrawlClient(components.firecrawl);
 
@@ -405,6 +406,7 @@ export const persistEvaluation = internalMutation({
       timestamp: now,
       idempotencyKey: `verdict:${args.caseId}:${version}:${evidenceManifestHash}`,
     });
+    await appendEvidenceReceipt(ctx, args.caseId, "verdict_created", now);
     if (args.source?.contentHash) {
       await recordIntegrationProof(ctx, {
         proofKey: "firecrawl.authority_evidence",

@@ -28,6 +28,7 @@ const schema = defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
     expiresAt: v.number(),
+    accessRevokedAt: v.optional(v.number()),
     lastCheckedAt: v.optional(v.number()),
     isDemo: v.boolean(),
     isPublicFixture: v.boolean(),
@@ -39,6 +40,7 @@ const schema = defineSchema({
     .index("by_forwarding_code_hash", ["forwardingCodeHash"])
     .index("by_public_fixture", ["isPublicFixture"])
     .index("by_expiry", ["expiresAt"])
+    .index("by_access_revoked_and_expiry", ["accessRevokedAt", "expiresAt"])
     .index("by_state", ["currentState"])
     .index("by_raw_retention", ["rawRetentionUntil"]),
 

@@ -228,6 +228,19 @@ describe("Convex case boundaries", () => {
     expect(result.case.currentVerdictCode).toBe("VERIFIED_RECALL_UNSAFE_CHANNEL");
     expect(result.verdicts[0]?.ruleResults.map((rule) => rule.ruleId)).toContain("NP-CHANNEL-002");
     expect(result.sources[0]?.verifiedEmail).toBe("shapesorterrecall@gmail.com");
+    expect(result.evidenceReceipts).toHaveLength(1);
+    const receipt = result.evidenceReceipts.at(0);
+    if (!receipt) throw new Error("receipt missing");
+    expect(receipt.verdictHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(receipt.timelineHash).toMatch(/^[a-f0-9]{64}$/);
+    const machineReceipt = JSON.parse(receipt.machineJson) as Record<string, unknown>;
+    expect(machineReceipt).toMatchObject({
+      receiptVersion: "evidence-receipt/1.0.0",
+      stage: "verdict_created",
+      publicCaseId: evidenceCase.created.publicId,
+      verdictVersion: 1,
+    });
+    expect(receipt.machineJson).not.toContain("attacker@unsafe.example");
   });
 
   it("never turns an empty authority result into safe", async () => {
@@ -346,6 +359,107 @@ describe("Convex case boundaries", () => {
     }));
     expect(result.approval?.state).toBe("expired");
     expect(result.caseDocument?.currentState).toBe("ACQUIRING_EVIDENCE");
+  });
+
+  it("schedules bounded stale evidence rechecks and expires prior approval", async () => {
+    vi.useFakeTimers();
+    try {
+      const t = convexTest(schema, modules);
+      const { created, source } = await createActionablePrivateCase(t);
+      const draft = await t.mutation(api.approvals.createDraft, {
+        publicId: created.publicId,
+        capabilityToken: created.capabilityToken,
+        verifiedRecipientSourceId: source._id,
+        intendedRecipient: "shapesorterrecall@gmail.com",
+        subject: "Recall request",
+        body: "Please confirm the remedy instructions.",
+      });
+      const result = await t.mutation(internal.maintenance.scheduleEvidenceRechecks, {
+        now: Date.now() + 25 * 60 * 60 * 1000,
+      });
+      expect(result).toEqual({ scheduled: 1, approvalsExpired: 1 });
+      const bundle = await t.query(api.cases.get, {
+        publicId: created.publicId,
+        capabilityToken: created.capabilityToken,
+      });
+      expect(bundle.case.currentState).toBe("ACQUIRING_EVIDENCE");
+      expect(bundle.approvals.find((approval) => approval._id === draft.approvalId)?.state).toBe(
+        "expired",
+      );
+      expect(bundle.timeline[0]?.eventType).toBe("evidence.scheduled_recheck_started");
+      expect(
+        await t.mutation(internal.maintenance.scheduleEvidenceRechecks, {
+          now: Date.now() + 25 * 60 * 60 * 1000,
+        }),
+      ).toEqual({ scheduled: 0, approvalsExpired: 0 });
+      await t.finishAllScheduledFunctions(vi.runAllTimers);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("records human-confirmed remedy and resolution as append-only receipts", async () => {
+    const t = convexTest(schema, modules);
+    const evidenceCase = await createEvidenceReadyCase(t);
+    await t.mutation(internal.evidencePipeline.persistEvaluation, {
+      caseId: evidenceCase.caseId,
+      claimEnvelopeHash: "claim-envelope-hash",
+      authoritativeRecallFound: false,
+      exactRecallIdMatch: false,
+      exactProductMatch: false,
+      matchCriticalIdentifierPresent: true,
+      noticeChannelMatchesVerifiedChannel: false,
+      unsafeSensitiveRequest: false,
+    });
+    await t.run(async (ctx) => {
+      await ctx.db.patch(evidenceCase.caseId, { currentState: "AWAITING_REPLY" });
+    });
+    await expect(
+      t.mutation(api.cases.updateResolution, {
+        publicId: evidenceCase.created.publicId,
+        capabilityToken: evidenceCase.created.capabilityToken,
+        action: "confirm_remedy",
+      }),
+    ).resolves.toEqual({ state: "REMEDY_CONFIRMED" });
+    await expect(
+      t.mutation(api.cases.updateResolution, {
+        publicId: evidenceCase.created.publicId,
+        capabilityToken: evidenceCase.created.capabilityToken,
+        action: "resolve",
+      }),
+    ).resolves.toEqual({ state: "RESOLVED" });
+    const bundle = await t.query(api.cases.get, {
+      publicId: evidenceCase.created.publicId,
+      capabilityToken: evidenceCase.created.capabilityToken,
+    });
+    expect(bundle.case.currentState).toBe("RESOLVED");
+    expect(bundle.evidenceReceipts).toHaveLength(3);
+    expect(bundle.evidenceReceipts[0]?.machineJson).toContain('"stage":"case_resolved"');
+  });
+
+  it("adds one bounded follow-up reminder after seven days awaiting reply", async () => {
+    const t = convexTest(schema, modules);
+    const { created } = await createActionablePrivateCase(t);
+    await t.run(async (ctx) => {
+      const caseDocument = await ctx.db
+        .query("cases")
+        .withIndex("by_public_id", (q) => q.eq("publicId", created.publicId))
+        .unique();
+      if (!caseDocument) throw new Error("missing case");
+      await ctx.db.patch(caseDocument._id, { currentState: "AWAITING_REPLY", updatedAt: 1 });
+    });
+    const now = Date.now() + 8 * 24 * 60 * 60 * 1000;
+    expect(await t.mutation(internal.maintenance.scheduleFollowupReminders, { now })).toEqual({
+      reminded: 1,
+    });
+    expect(await t.mutation(internal.maintenance.scheduleFollowupReminders, { now })).toEqual({
+      reminded: 0,
+    });
+    const bundle = await t.query(api.cases.get, {
+      publicId: created.publicId,
+      capabilityToken: created.capabilityToken,
+    });
+    expect(bundle.timeline[0]?.eventType).toBe("remedy.followup_due");
   });
 
   it("requires the exact capability for a private case", async () => {
@@ -566,5 +680,24 @@ describe("Convex case boundaries", () => {
       capabilityToken: created.capabilityToken,
     });
     expect(caseBundle.notices[0]?.sanitizedBody).toBe("[expired by retention policy]");
+  });
+
+  it("revokes private capability access after case expiry", async () => {
+    const t = convexTest(schema, modules);
+    const created = await t.mutation(api.cases.createPasted, {
+      subject: "Expiry test",
+      sender: "sender@example.test",
+      body: "A private notice that must not outlive its case capability.",
+    });
+    const maintenance = await t.mutation(internal.maintenance.expireApprovalsAndRawContent, {
+      now: Date.now() + 31 * 24 * 60 * 60 * 1000,
+    });
+    expect(maintenance.caseAccessRevoked).toBe(1);
+    await expect(
+      t.query(api.cases.get, {
+        publicId: created.publicId,
+        capabilityToken: created.capabilityToken,
+      }),
+    ).rejects.toThrow("CASE_EXPIRED");
   });
 });

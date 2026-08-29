@@ -81,7 +81,7 @@ A strict schema captures language/type, claimed and parsed sender identity, reta
 - Firecrawl: maximum 12 pages, same registrable domain, depth 2, no external links.
 - Model attempts: 2; external retries: 3 only for transient errors with bounded backoff.
 - Public expensive actions: capability- and time-window limited.
-- Raw-content retention: 30 days by default; sanitized receipts and derived evidence can remain.
+- Raw-content retention: 7 days by default, configurable from 1 to 30 days; sanitized receipts and derived evidence can remain.
 
 ## Acceptance criteria
 
