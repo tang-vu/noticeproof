@@ -32,11 +32,11 @@ diff --git a/node_modules/@agentmail/convex/src/component/convex.config.ts b/nod
 index b1cc7f1..5e8526d 100644
 --- a/node_modules/@agentmail/convex/src/component/convex.config.ts
 +++ b/node_modules/@agentmail/convex/src/component/convex.config.ts
-@@ -1,7 +1,13 @@
+@@ -1,2 +1,3 @@
  import { defineComponent } from "convex/server";
 +import { v } from "convex/values";
  import workpool from "@convex-dev/workpool/convex.config";
- 
+@@ -4,3 +5,8 @@
 -const component = defineComponent("agentmail");
 +const component = defineComponent("agentmail", {
 +  env: {
@@ -46,4 +46,3 @@ index b1cc7f1..5e8526d 100644
 +});
  component.use(workpool, { name: "sendPool" });
  component.use(workpool, { name: "callbackPool" });
- 
