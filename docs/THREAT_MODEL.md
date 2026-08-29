@@ -34,7 +34,7 @@ Protected assets are raw notices/attachments, capability tokens, sponsor keys/we
 
 ## Residual risk
 
-- The development deployment has exercised a sanitized AgentMail notice through case creation, strict OpenAI extraction, authoritative evidence, deterministic verdict, controlled delivery, signed status webhooks, and signed replies attached to the trusted thread. Production has passed live OpenAI/Firecrawl verification and has an enabled inbox-scoped AgentMail webhook with a separate secret; an unsigned production request returns 401. A signed production inbound email remains intentionally unclaimed until exercised.
+- Production has exercised a sanitized signed AgentMail notice through case creation, strict OpenAI extraction, authoritative evidence, and deterministic verdict. Its enabled inbox-scoped webhook uses a separate secret, and an unsigned request returns 401. Controlled delivery, signed delivery status, and reply attachment are additionally exercised on the development deployment.
 - Public rate limiting is intentionally coarse because the no-login demo has no trusted per-user identity or edge IP. It limits amplification but a distributed attacker could still consume shared quota.
 - Screenshot-only fields use exact quoted text with a zero offset because ClaimEnvelope v1 has text offsets, not image coordinates. The quote remains reviewable, but pixel-level provenance is a future schema revision.
 - Uploads abandoned before case creation are not attached to the application retention index; public upload URL issuance is therefore tightly rate-limited.
