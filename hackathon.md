@@ -12,7 +12,7 @@
 - **Auth:** none
 - **AI models:** gpt-5-mini (configurable with `OPENAI_MODEL`)
 - **Started:** 2026-08-26T14:18:38Z
-- **Last updated:** 2026-08-29T00:02:00+07:00
+- **Last updated:** 2026-08-29T17:15:39+07:00
 
 ## Log
 
@@ -31,3 +31,7 @@ Published the development frontend through Convex static hosting and externally 
 ### 2026-08-29 - a2f8034
 
 Closed the live-path gaps after an acceptance-gate audit. Screenshot intake now uploads privately to Convex storage with server-side media/size checks and scheduled retention cleanup. Validated OpenAI extraction schedules an evidence pipeline that uses Firecrawl search only for discovery, accepts only canonical CPSC recall pages as Tier 1, scrapes them, exact-matches recall/product identifiers and channels, creates evidence edges, and persists an append-only deterministic verdict. The capability-scoped UI now renders the resulting claim ledger, source hashes, rule IDs, editable outbound draft, immutable preview, and approve/cancel controls through realtime subscriptions (`convex/evidencePipeline.ts`, `convex/cases.ts`, `convex/approvals.ts`, `src/LiveApp.tsx`). `npm run verify` passes with 59 unit/integration checks, a production build, and 8 Playwright passes with 2 project-specific skips. A hosted browser smoke test uploaded a sanitized PNG, created a private capability case, and reached `VERIFICATION_FAILED_RETRYABLE` with the explicit message that extraction could not complete—correct fail-safe behavior while `OPENAI_API_KEY` is absent. OpenAI and AgentMail live proof remains credential-blocked and is not claimed.
+
+### 2026-08-29 - working tree
+
+Exercised OpenAI Responses extraction live on the hosted development app with sanitized pasted notices: the deployment persisted schema-validated `gpt-5-mini` ClaimEnvelopes and streamed extraction/evidence/verdict state through Convex subscriptions. During evidence review, corrected the hero fixture from CPSC recall `25-452` to the official record `25-459` and replaced a package-volume description with exact model `PZB02-E001` (`fixtures/v1/real-recall-unsafe-channel.json`, `convex/seeds.ts`). The reproducible hosted-browser proof then produced five material claims, one Tier 1 CPSC source, deterministic verdict `VERIFIED_RECALL_UNSAFE_CHANNEL`, and a safe-action draft addressed to the independently listed `recall@epoca.com`; upstream OpenAI/Firecrawl latency was about two minutes in this run and is not represented as sub-minute. Added `npm run proof:live -- <convex.site URL>` to repeat that assertion without exposing secrets. The final local gate passes with 59 unit/integration checks, a production build, and 8 Playwright passes with 2 project-specific skips; `npm audit --omit=dev` reports zero vulnerabilities. AgentMail has not been exercised live and remains the outstanding sponsor gate.

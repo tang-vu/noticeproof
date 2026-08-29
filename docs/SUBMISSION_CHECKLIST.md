@@ -1,6 +1,6 @@
 # Submission checklist
 
-Status is evidence-based as of 2026-08-28.
+Status is evidence-based as of 2026-08-29.
 
 ## Required delivery
 
@@ -15,7 +15,7 @@ Status is evidence-based as of 2026-08-28.
 - [x] Strict OpenAI Responses extraction boundary and deterministic rule engine
 - [x] Convex generated bindings and successful development push
 - [ ] Real AgentMail inbound event creates one case mapping
-- [ ] Real OpenAI extraction persisted after validation
+- [x] Real OpenAI extraction persisted after validation
 - [x] Real Firecrawl scrape/crawl with reactive progress
 - [ ] Current approval transaction drives controlled AgentMail send/delivery/reply
 - [ ] Production secrets/webhooks configured
@@ -38,7 +38,7 @@ Status is evidence-based as of 2026-08-28.
 
 ## External actions needed
 
-1. Provide/set server-side OpenAI and AgentMail credentials plus a controlled `DEMO_VENDOR_EMAIL`.
-2. Configure the AgentMail webhook URL and secret.
+1. Provide/set AgentMail credentials plus a controlled `DEMO_VENDOR_EMAIL`.
+2. Configure the AgentMail inbox, webhook URL, and secret.
 3. Grant fresh production-deploy consent after production secrets are ready.
 4. Approve the production deploy, social publication, and hackathon submission.

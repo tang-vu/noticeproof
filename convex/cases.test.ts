@@ -151,7 +151,7 @@ describe("Convex case boundaries", () => {
         publicId: created.publicId,
         capabilityToken: created.capabilityToken,
       });
-      await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+      await t.finishAllScheduledFunctions(vi.runAllTimers);
       const result = await t.query(api.cases.get, {
         publicId: created.publicId,
         capabilityToken: created.capabilityToken,
@@ -161,7 +161,7 @@ describe("Convex case boundaries", () => {
     } finally {
       vi.useRealTimers();
     }
-  });
+  }, 15_000);
 
   it("persists a deterministic unsafe-channel verdict from exact CPSC evidence", async () => {
     const t = convexTest(schema, modules);

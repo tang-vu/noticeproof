@@ -7,6 +7,7 @@ import type { VERDICT_CODES } from "../shared/domain/constants";
 type VerdictCode = (typeof VERDICT_CODES)[number];
 
 type Fixture = {
+  fixtureVersion: string;
   publicId: string;
   subject: string;
   sender: string;
@@ -23,6 +24,7 @@ type Fixture = {
 
 const FIXTURES: Fixture[] = [
   {
+    fixtureVersion: "noticeproof-fixtures/1.0.0",
     publicId: "demo-synthetic-conflict",
     subject: "URGENT: verify your account for an immediate recall refund",
     sender: "Recall Center <refunds@recall-login.example>",
@@ -36,6 +38,7 @@ const FIXTURES: Fixture[] = [
     ruleId: "NP-SENSITIVE-001",
   },
   {
+    fixtureVersion: "noticeproof-fixtures/1.0.1",
     publicId: "demo-real-recall-unsafe-channel",
     subject: "Paris Hilton mini fridge safety recall — act today",
     sender: "Recall Processing <refunds@epoca-recall-help.example>",
@@ -51,6 +54,7 @@ const FIXTURES: Fixture[] = [
     verifiedEmail: "recall@epoca.com",
   },
   {
+    fixtureVersion: "noticeproof-fixtures/1.0.0",
     publicId: "demo-verified-official-channel",
     subject: "Shape sorter car toy recall — model MZL-038",
     sender: "Shape Sorter Recall <shapesorterrecall@gmail.com>",
@@ -73,7 +77,15 @@ async function seedFixture(ctx: MutationCtx, fixture: Fixture, now: number): Pro
     .query("cases")
     .withIndex("by_public_id", (q) => q.eq("publicId", fixture.publicId))
     .unique();
-  if (existing) return existing._id;
+  if (existing) {
+    if (existing.fixtureVersion !== fixture.fixtureVersion) {
+      await ctx.db.patch(existing._id, {
+        fixtureVersion: fixture.fixtureVersion,
+        updatedAt: now,
+      });
+    }
+    return existing._id;
+  }
 
   const caseId = await ctx.db.insert("cases", {
     publicId: fixture.publicId,
@@ -90,7 +102,7 @@ async function seedFixture(ctx: MutationCtx, fixture: Fixture, now: number): Pro
     lastCheckedAt: now,
     isDemo: true,
     isPublicFixture: true,
-    fixtureVersion: "noticeproof-fixtures/1.0.0",
+    fixtureVersion: fixture.fixtureVersion,
   });
   await ctx.db.insert("notices", {
     caseId,

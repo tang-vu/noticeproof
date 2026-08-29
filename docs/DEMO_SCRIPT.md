@@ -18,7 +18,7 @@ Open **Real recall · unsafe channel**.
 
 Scroll through the ledger: product, recall ID, hazard, remedy, then stop on the contradicted destination. Open the Tier 1 CPSC evidence.
 
-“The product matches CPSC recall 25-452. The notice link does not appear in authoritative evidence, so the deterministic verdict is: real recall, unsafe channel.”
+“The product and model match CPSC recall 25-459. The notice link does not appear in authoritative evidence, so the deterministic verdict is: real recall, unsafe channel.”
 
 ## 1:08–1:48 — Safe channel switch
 
@@ -35,6 +35,8 @@ In the configured live environment, trigger the controlled reply.
 “AgentMail preserves the thread. Convex ingests the signed event and the case timeline changes immediately—no refresh and no frontend polling.”
 
 If live credentials are unavailable, do not simulate this claim; show the fixture timeline and state the missing gate.
+
+For rehearsal, `npm run proof:live -- https://<deployment>.convex.site` asserts the OpenAI → Firecrawl → deterministic verdict → verified-contact path. Allow up to two minutes for sponsor APIs and keep the seeded hero case ready so upstream latency never creates an unexplained pause in the recorded demo.
 
 ## 2:18–2:43 — Receipt and nuance
 

@@ -173,7 +173,7 @@ function Landing({
               <div>
                 <small>RECALL CLAIM</small>
                 <strong>Fire and burn hazard</strong>
-                <p>Supported by CPSC 25-452</p>
+                <p>Supported by CPSC 25-459</p>
               </div>
             </div>
             <div className="claim-row danger">

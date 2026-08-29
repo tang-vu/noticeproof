@@ -1,18 +1,18 @@
 {
-  "fixtureVersion": "noticeproof-fixtures/1.0.0",
+  "fixtureVersion": "noticeproof-fixtures/1.0.1",
   "caseSlug": "real-recall-unsafe-channel",
-  "label": "Sanitized demo derived from public CPSC recall 25-452",
+  "label": "Sanitized demo derived from public CPSC recall 25-459",
   "inputKind": "seeded_demo",
   "notice": {
     "subject": "Paris Hilton mini fridge safety recall — act today",
     "sender": "Recall Processing <refunds@epoca-recall-help.example>",
-    "body": "Your Paris Hilton 4-liter Mini Beauty Fridge manufactured before August 2024 is recalled because it can overheat and cause a fire. Submit your serial number at https://epoca-refund.example/claim for a refund."
+    "body": "Your Paris Hilton 4-liter Mini Beauty Fridge, model PZB02-E001, manufactured before August 2024 is recalled because it can overheat and cause a fire. Continue at https://epoca-refund.example/claim for a refund."
   },
   "claimEnvelope": {
     "manufacturer": "Epoca International",
     "productName": "Paris Hilton Mini Beauty Fridge",
-    "models": ["4-liter"],
-    "recallId": "25-452",
+    "models": ["PZB02-E001"],
+    "recallId": "25-459",
     "hazard": "fire and burn hazards",
     "remedy": "refund",
     "urls": ["https://epoca-refund.example/claim"],
@@ -20,7 +20,7 @@
   },
   "evidence": [
     {
-      "id": "cpsc-25-452",
+      "id": "cpsc-25-459",
       "url": "https://www.cpsc.gov/Recalls/2025/Epoca-International-Recalls-Paris-Hilton-Mini-Beauty-Fridges-Due-to-Fire-and-Burn-Hazards",
       "domain": "cpsc.gov",
       "tier": 1,
@@ -52,7 +52,7 @@
     "externalFailure": false,
     "facts": [
       {
-        "id": "cpsc-25-452",
+        "id": "cpsc-25-459",
         "tier": 1,
         "relation": "supports",
         "claimType": "recall_id",
