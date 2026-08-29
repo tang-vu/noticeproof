@@ -18,7 +18,7 @@ Status is evidence-based as of 2026-08-29.
 - [x] Real OpenAI extraction persisted after validation
 - [x] Real Firecrawl scrape/crawl with reactive progress
 - [x] Current approval transaction drives controlled AgentMail send and delivery
-- [ ] Real AgentMail reply attaches to the existing trusted thread
+- [x] Real AgentMail reply attaches to the existing trusted thread
 - [ ] Production secrets/webhooks configured
 - [ ] Production demo cases seeded idempotently
 - [x] Public development `convex.site` URL tested externally
@@ -39,6 +39,6 @@ Status is evidence-based as of 2026-08-29.
 
 ## External actions needed
 
-1. Forward one sanitized notice to the configured AgentMail inbox and reply once to the controlled outbound thread.
+1. Send one sanitized notice as a brand-new AgentMail thread with a unique subject to prove new forwarded-case creation.
 2. Grant fresh production-deploy consent after production secrets are ready.
 3. Approve the production deploy, social publication, and hackathon submission.

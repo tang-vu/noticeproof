@@ -31,7 +31,7 @@ NoticeProof is not a recall feed: its object is a particular notice in an anxiou
 - **Firecrawl’s Convex component** performs search/scrape and a bounded durable manufacturer-domain crawl whose pages and progress are reactive Convex state. Search position never grants authority.
 - **AgentMail’s Convex component** owns the persistent inbox, verified/deduplicated inbound events, threads, durable delivery, and replies. A send requires a current single-use approval and independently verified recipient.
 
-The components are registered in `convex/convex.config.ts`. The development deployment proves Convex realtime, validated OpenAI extraction, a bounded Firecrawl crawl, and AgentMail delivery to the explicitly labeled demo destination. A real forwarded-notice and reply round trip remains a separate acceptance item until exercised end to end.
+The components are registered in `convex/convex.config.ts`. The development deployment proves Convex realtime, validated OpenAI extraction, a bounded Firecrawl crawl, AgentMail delivery to the explicitly labeled demo destination, and signed inbound replies attached to the original trusted thread. Creation of a new case from a distinct forwarded-notice thread remains a separate live acceptance item.
 
 ## Safety and limits
 
