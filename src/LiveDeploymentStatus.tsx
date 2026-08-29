@@ -12,7 +12,7 @@ export function LiveDeploymentStatus() {
         <strong>{cases ? "Convex realtime connected" : "Connecting to Convex realtime…"}</strong>
         <p>
           {cases
-            ? `${cases.length} sanitized demo cases are subscribed from the dev backend without polling.`
+            ? `${cases.length} sanitized demo cases are subscribed from the Convex backend without polling.`
             : "Waiting for the first reactive case snapshot."}
         </p>
         {crawl ? (

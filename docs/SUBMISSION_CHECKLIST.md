@@ -19,9 +19,9 @@ Status is evidence-based as of 2026-08-29.
 - [x] Real Firecrawl scrape/crawl with reactive progress
 - [x] Current approval transaction drives controlled AgentMail send and delivery
 - [x] Real AgentMail reply attaches to the existing trusted thread
-- [ ] Production secrets/webhooks configured
-- [ ] Production demo cases seeded idempotently
-- [x] Public development `convex.site` URL tested externally
+- [x] Production secrets and inbox-scoped AgentMail webhook configured
+- [x] Production demo cases seeded idempotently
+- [x] Public production `convex.site` URL tested in a fresh browser context
 - [x] Repository changes committed and pushed to `main`
 - [ ] Demo video recorded and linked (under three minutes)
 - [ ] Public social post published and linked
@@ -39,5 +39,5 @@ Status is evidence-based as of 2026-08-29.
 
 ## External actions needed
 
-1. Grant fresh production-deploy consent after production secrets are ready.
-2. Approve the production deploy, social publication, and hackathon submission.
+1. Record and upload the sub-three-minute demo video.
+2. Approve social publication and the final hackathon submission.

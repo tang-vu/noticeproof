@@ -10,7 +10,7 @@ NoticeProof verifies the claims in a suspicious recall notice against authoritat
 
 Urgent recall messages can be fake, outdated, incomplete—or describe a real recall while substituting an unsafe link. NoticeProof decomposes the exact message into claims, finds the matching CPSC record and authority-linked manufacturer evidence, evaluates exact identifiers and contact details with deterministic rules, then requires approval before starting a new email thread through AgentMail.
 
-**Live development demo:** https://outgoing-snake-653.convex.site — public, capability-scoped, and hosted through Convex static hosting. Convex realtime, OpenAI structured extraction, Firecrawl search/scrape/crawl, and a human-approved controlled AgentMail delivery have all been exercised live.
+**Live production demo:** https://lovely-eel-809.convex.site — public, capability-scoped, and hosted through Convex static hosting. Production Convex realtime, OpenAI structured extraction, and Firecrawl evidence acquisition have been exercised live; the controlled AgentMail delivery/reply path is proven on the development deployment, and its signed production webhook is configured.
 
 ## Three-step demo
 
