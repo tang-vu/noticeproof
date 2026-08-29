@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import App from "./App";
 import { LiveApp } from "./LiveApp";
+import { AppErrorBoundary, NetworkStatus } from "./ReliabilityShell";
 import "./styles.css";
 
 const root = document.getElementById("root");
@@ -17,4 +18,11 @@ const content = convexUrl ? (
   <App />
 );
 
-createRoot(root).render(<StrictMode>{content}</StrictMode>);
+createRoot(root).render(
+  <StrictMode>
+    <AppErrorBoundary>
+      <NetworkStatus />
+      {content}
+    </AppErrorBoundary>
+  </StrictMode>,
+);

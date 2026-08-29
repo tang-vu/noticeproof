@@ -25,6 +25,47 @@ export class ClaimExtractionError extends Error {
   }
 }
 
+function validateAndNormalizeSourceSpans(
+  value: unknown,
+  noticeText: string,
+  acceptsImageOnlySpans: boolean,
+): boolean {
+  if (Array.isArray(value)) {
+    return value.every((item) =>
+      validateAndNormalizeSourceSpans(item, noticeText, acceptsImageOnlySpans),
+    );
+  }
+  if (!value || typeof value !== "object") return true;
+
+  const record = value as Record<string, unknown>;
+  const span = record.span;
+  if (span && typeof span === "object" && !Array.isArray(span)) {
+    const candidate = span as Record<string, unknown>;
+    const { start, end, quote } = candidate;
+    if (
+      typeof start !== "number" ||
+      typeof end !== "number" ||
+      typeof quote !== "string" ||
+      !quote
+    ) {
+      return false;
+    }
+    if (acceptsImageOnlySpans && start === 0 && end === 0) return true;
+    if (start <= end && end <= noticeText.length && noticeText.slice(start, end) === quote) {
+      return true;
+    }
+
+    const exactIndex = noticeText.indexOf(quote);
+    if (exactIndex < 0 || exactIndex !== noticeText.lastIndexOf(quote)) return false;
+    candidate.start = exactIndex;
+    candidate.end = exactIndex + quote.length;
+  }
+
+  return Object.values(record).every((item) =>
+    validateAndNormalizeSourceSpans(item, noticeText, acceptsImageOnlySpans),
+  );
+}
+
 export async function extractClaimEnvelope(args: {
   noticeText: string;
   imageDataUrl?: string;
@@ -63,7 +104,10 @@ export async function extractClaimEnvelope(args: {
         },
       });
       const validated = claimEnvelopeSchema.safeParse(response.output_parsed);
-      if (validated.success) {
+      if (
+        validated.success &&
+        validateAndNormalizeSourceSpans(validated.data, args.noticeText, Boolean(args.imageDataUrl))
+      ) {
         return { envelope: validated.data, responseId: response.id, model, attempts: attempt };
       }
     } catch {

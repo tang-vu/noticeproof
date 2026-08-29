@@ -12,7 +12,7 @@
 - **Auth:** none
 - **AI models:** gpt-5-mini (configurable with `OPENAI_MODEL`)
 - **Started:** 2026-08-26T14:18:38Z
-- **Last updated:** 2026-08-29T17:11:15Z
+- **Last updated:** 2026-08-29T17:54:00Z
 
 ## Log
 
@@ -67,3 +67,7 @@ Closed the consumer handoff gap for forwarded notices. The landing now creates a
 ### 2026-08-29 - 19d7ea0
 
 Deployed the tracked-forwarding, sponsor-proof, bounded-explanation, accessibility, and UI release to the production backend and `https://lovely-eel-809.convex.site`. Convex schema validation passed, added seven indexes without deleting any, and static hosting published the new four-file bundle atomically. A production backfill recorded only the three sponsor milestones supported by production history; it intentionally did not claim controlled AgentMail delivery, whose evidence remains development-only. A fresh sanitized production case then reached `VERIFIED_RECALL_UNSAFE_CHANNEL` with five claims, one authoritative source, and the independently recovered contact without sending email. The follow-on privacy-safe proof query confirmed that `gpt-5-mini` also created the bounded rule-grounded explanation. A new browser context loaded three demos and all visible Convex/OpenAI/Firecrawl/AgentMail proof cards, opened the hero case without overflow, and recorded zero console errors. A separate production intake smoke test created a tracked-forward session, opened its private route, and displayed the one-time subject instructions without sending email or starting sponsor calls.
+
+### 2026-08-29 - pre-release hardening
+
+Ran the Convex launch-readiness, authorization, reviewer, runtime-insights, and cost-oriented audit against the application code and production deployment. Production Insights reported one non-failing OCC retry inside the AgentMail callback-pool component and no application-level reliability event; a 100-event runtime sample showed successful static-hosting requests, reactive public queries, and the bounded empty delivery reconciler without logged errors. Tightened every public deployment-proof projection so case capability/forwarding hashes, component crawl identifiers, credit/error metadata, proof keys, and internal document IDs are no longer returned to the browser. Added a whole-app safe recovery boundary and explicit offline state so a query/network failure cannot become a blank page or a substantive safety verdict. OpenAI ClaimEnvelope validation now deterministically checks each source quote against the submitted notice, repairs an offset only when the exact quote is unique, accepts the documented image-only 0–0 convention, and rejects hallucinated or ambiguous spans through the existing bounded retry path. `npx convex dev --once` passed; the sanitized development live proof still reached `VERIFIED_RECALL_UNSAFE_CHANNEL` with five validated claims, one authoritative source, and `recall@epoca.com` without sending email. `npm run verify` passes with 71 unit/integration checks, a production build, and 12 Playwright passes with 4 intentional project-specific skips; `npm audit --omit=dev` reports zero vulnerabilities. These hardening changes are not yet claimed as production-deployed.

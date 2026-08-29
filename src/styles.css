@@ -3260,3 +3260,54 @@ footer > span {
 .why-panel li > span.fail {
   color: #8f2c28 !important;
 }
+
+.network-status {
+  position: sticky;
+  z-index: 100;
+  top: 0;
+  padding: 11px 18px;
+  border-bottom: 1px solid #a86e16;
+  background: #fff4d7;
+  color: #583a08;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.recovery-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  background: #f4f1e9;
+  color: #102a2a;
+}
+
+.recovery-card {
+  width: min(620px, 100%);
+  padding: clamp(28px, 6vw, 52px);
+  border: 1px solid #d9d5ca;
+  border-top: 5px solid #b57b19;
+  border-radius: 18px;
+  background: #fffdf8;
+  box-shadow: 0 20px 60px rgb(16 42 42 / 10%);
+}
+
+.recovery-card h1 {
+  margin: 10px 0 16px;
+  font-size: clamp(32px, 6vw, 52px);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+
+.recovery-card > p:not(.eyebrow) {
+  color: #465652;
+  line-height: 1.65;
+}
+
+.recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 26px;
+}

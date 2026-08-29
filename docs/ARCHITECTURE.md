@@ -9,7 +9,7 @@ Paste / image / AgentMail forward
    Convex intake transaction ── private storage + idempotent timeline
               │
               ▼
- OpenAI strict ClaimEnvelope ── validated, versioned, source-spanned claims
+ OpenAI strict ClaimEnvelope ── schema + deterministic exact-quote span binding
               │
               ▼
  CPSC API control source + Firecrawl search/scrape/durable bounded crawl

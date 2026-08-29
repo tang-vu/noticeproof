@@ -1,7 +1,6 @@
 import { v } from "convex/values";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation, query } from "./_generated/server";
-import schema from "./schema";
 
 type Sponsor = "Convex" | "OpenAI" | "Firecrawl" | "AgentMail";
 type ProofStatus = "verified" | "active" | "retryable";
@@ -30,9 +29,34 @@ export async function recordIntegrationProof(
 
 export const listPublic = query({
   args: {},
-  returns: v.array(schema.doc("integrationProofs")),
-  handler: async (ctx) =>
-    await ctx.db.query("integrationProofs").withIndex("by_verified_at").order("desc").take(8),
+  returns: v.array(
+    v.object({
+      sponsor: v.union(
+        v.literal("Convex"),
+        v.literal("OpenAI"),
+        v.literal("Firecrawl"),
+        v.literal("AgentMail"),
+      ),
+      milestone: v.string(),
+      detail: v.string(),
+      status: v.union(v.literal("verified"), v.literal("active"), v.literal("retryable")),
+      verifiedAt: v.number(),
+    }),
+  ),
+  handler: async (ctx) => {
+    const proofs = await ctx.db
+      .query("integrationProofs")
+      .withIndex("by_verified_at")
+      .order("desc")
+      .take(8);
+    return proofs.map(({ sponsor, milestone, detail, status, verifiedAt }) => ({
+      sponsor,
+      milestone,
+      detail,
+      status,
+      verifiedAt,
+    }));
+  },
 });
 
 export const backfillFromRecentActivity = internalMutation({

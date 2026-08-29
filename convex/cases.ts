@@ -7,6 +7,7 @@ import {
   sha256,
 } from "./lib/access";
 import { rawRetentionUntil } from "./lib/retention";
+import { caseState, verdictCode } from "./model/validators";
 import schema from "./schema";
 import { sanitizePlainText } from "../shared/domain/redaction";
 
@@ -393,11 +394,24 @@ export const get = query({
 
 export const listPublicDemos = query({
   args: {},
-  returns: v.array(schema.doc("cases")),
+  returns: v.array(
+    v.object({
+      publicId: v.string(),
+      currentState: caseState,
+      currentVerdictCode: v.optional(verdictCode),
+      updatedAt: v.number(),
+    }),
+  ),
   handler: async (ctx) => {
-    return await ctx.db
+    const demos = await ctx.db
       .query("cases")
       .withIndex("by_public_fixture", (q) => q.eq("isPublicFixture", true))
       .take(10);
+    return demos.map(({ publicId, currentState, currentVerdictCode, updatedAt }) => ({
+      publicId,
+      currentState,
+      ...(currentVerdictCode ? { currentVerdictCode } : {}),
+      updatedAt,
+    }));
   },
 });

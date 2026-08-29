@@ -133,6 +133,32 @@ describe("Convex case boundaries", () => {
 
     const demos = await t.query(api.cases.listPublicDemos, {});
     expect(demos).toHaveLength(3);
+    expect(demos.every((demo) => !("capabilityHash" in demo))).toBe(true);
+    expect(demos.every((demo) => !("forwardingCodeHash" in demo))).toBe(true);
+  });
+
+  it("exposes sponsor proof without internal keys or document identifiers", async () => {
+    const t = convexTest(schema, modules);
+    await t.run(async (ctx) => {
+      await ctx.db.insert("integrationProofs", {
+        proofKey: "private-deduplication-key",
+        sponsor: "OpenAI",
+        milestone: "Structured extraction validated",
+        detail: "A sanitized proof milestone.",
+        status: "verified",
+        verifiedAt: 1,
+      });
+    });
+    const [proof] = await t.query(api.integrationProofs.listPublic, {});
+    expect(proof).toEqual({
+      sponsor: "OpenAI",
+      milestone: "Structured extraction validated",
+      detail: "A sanitized proof milestone.",
+      status: "verified",
+      verifiedAt: 1,
+    });
+    expect(proof && "proofKey" in proof).toBe(false);
+    expect(proof && "_id" in proof).toBe(false);
   });
 
   it("keeps public fixtures immutable", async () => {

@@ -32,7 +32,7 @@ export function LiveDeploymentStatus() {
           <small>Typed queries · subscriptions · no polling</small>
         </article>
         {proofs?.map((proof) => (
-          <article key={proof._id}>
+          <article key={`${proof.sponsor}:${proof.milestone}`}>
             <span>{proof.sponsor}</span>
             <strong>{proof.milestone}</strong>
             <small>{proof.detail}</small>

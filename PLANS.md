@@ -19,15 +19,14 @@ Statuses: `pending`, `in_progress`, `blocked`, `complete`.
 
 ## Current sequence
 
-1. Finish M0 and record it in `hackathon.md`.
-2. Scaffold React/Vite directly because the installed Convex quickstart emits Next.js and conflicts with the required frozen stack.
-3. Install current official component packages and inspect their shipped types/examples before writing component integration code.
-4. Implement the domain core and seeded reactive path first so local verification remains useful without external credentials.
-5. Add each real sponsor adapter with explicit live/fixture labeling; never silently mock a live path.
-6. Run review/verification after each milestone and update this plan plus `hackathon.md` from local evidence.
+1. Deploy the final reviewed hardening commit to production after fresh target-specific approval.
+2. Repeat the sanitized production smoke, public browser, console, mobile overflow, and privacy-safe sponsor-proof checks.
+3. Record the sub-three-minute product demo using the production hero case and controlled evidence already prepared.
+4. Publish the social post and replace the remaining media placeholders with public URLs.
+5. Complete the exact VibeApps submission form and preserve a timestamped confirmation.
 
 ## Known external blockers
 
-- A real Convex dev/prod deployment may require interactive Convex account authentication.
-- Real AgentMail intake/reply, OpenAI extraction and bounded explanation, Firecrawl evidence, deterministic verdict, and controlled delivery evidence is recorded on the development deployment.
-- Social publishing, final video upload, and hackathon submission require explicit user approval or controlled account action.
+- The final hardening diff is verified on the development deployment but requires fresh authorization before changing production.
+- Production records signed AgentMail inbound, OpenAI extraction/explanation, Firecrawl evidence, and deterministic verdict. Controlled AgentMail delivery/reply evidence remains development-only and is labeled that way.
+- Social publishing, final video upload, and hackathon submission require the user's controlled account actions.

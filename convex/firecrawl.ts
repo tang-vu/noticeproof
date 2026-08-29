@@ -337,14 +337,11 @@ export const crawlProgress = query({
   returns: v.union(
     v.null(),
     v.object({
-      crawlId: v.string(),
       status: v.string(),
       pageCount: v.number(),
       total: v.optional(v.number()),
       completed: v.optional(v.number()),
-      creditsUsed: v.optional(v.number()),
       finalized: v.boolean(),
-      error: v.optional(v.string()),
     }),
   ),
   handler: async (ctx, args) => {
@@ -362,14 +359,11 @@ export const crawlProgress = query({
     const crawl = await firecrawl.getCrawl(ctx, crawlId);
     if (!crawl) return null;
     return {
-      crawlId,
       status: crawl.status,
       pageCount: crawl.pageCount,
       ...(crawl.total === undefined ? {} : { total: crawl.total }),
       ...(crawl.completed === undefined ? {} : { completed: crawl.completed }),
-      ...(crawl.creditsUsed === undefined ? {} : { creditsUsed: crawl.creditsUsed }),
       finalized: crawl.finalized,
-      ...(crawl.error === undefined ? {} : { error: crawl.error }),
     };
   },
 });
