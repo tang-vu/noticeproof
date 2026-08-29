@@ -14,7 +14,7 @@ Status is evidence-based as of 2026-08-29.
 - [x] Official static-hosting, Firecrawl, and AgentMail components registered
 - [x] Strict OpenAI Responses extraction boundary and deterministic rule engine
 - [x] Convex generated bindings and successful development push
-- [ ] Real AgentMail inbound event creates one case mapping
+- [x] Real AgentMail inbound event creates one case mapping
 - [x] Real OpenAI extraction persisted after validation
 - [x] Real Firecrawl scrape/crawl with reactive progress
 - [x] Current approval transaction drives controlled AgentMail send and delivery
@@ -39,6 +39,5 @@ Status is evidence-based as of 2026-08-29.
 
 ## External actions needed
 
-1. Send one sanitized notice as a brand-new AgentMail thread with a unique subject to prove new forwarded-case creation.
-2. Grant fresh production-deploy consent after production secrets are ready.
-3. Approve the production deploy, social publication, and hackathon submission.
+1. Grant fresh production-deploy consent after production secrets are ready.
+2. Approve the production deploy, social publication, and hackathon submission.

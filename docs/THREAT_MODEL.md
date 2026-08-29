@@ -34,7 +34,7 @@ Protected assets are raw notices/attachments, capability tokens, sponsor keys/we
 
 ## Residual risk
 
-- OpenAI extraction has been exercised with a sanitized notice and persisted only after strict schema validation. AgentMail controlled delivery, signed status webhooks, and signed replies attached to the existing trusted thread have also been exercised. A brand-new forwarded-notice thread has not yet created a case live, so that narrower acceptance item remains open.
+- The development deployment has exercised a sanitized brand-new AgentMail notice through case creation, strict OpenAI extraction, authoritative evidence, deterministic verdict, controlled delivery, signed status webhooks, and signed replies attached to the existing trusted thread. Production deployment configuration remains separately unproven.
 - Public rate limiting is intentionally coarse because the no-login demo has no trusted per-user identity or edge IP. It limits amplification but a distributed attacker could still consume shared quota.
 - Screenshot-only fields use exact quoted text with a zero offset because ClaimEnvelope v1 has text offsets, not image coordinates. The quote remains reviewable, but pixel-level provenance is a future schema revision.
 - Uploads abandoned before case creation are not attached to the application retention index; public upload URL issuance is therefore tightly rate-limited.

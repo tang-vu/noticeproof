@@ -7,9 +7,9 @@ Statuses: `pending`, `in_progress`, `blocked`, `complete`.
 | #   | Status      | Outcome                                                                                                   | Dependencies                              | Validation                                                     |
 | --- | ----------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------- |
 | 0   | complete    | Frozen contract, repository rules, ADRs, environment contract, factual hackathon log                      | Official docs and installed Convex skills | Documents reviewed; `git diff --check` passes                  |
-| 1   | in_progress | Thin real sponsor slice through inbound → extraction → evidence → reactive UI → approved controlled send  | Distinct forwarded-message smoke test     | All four sponsors live; delivery and reply ingestion passed    |
+| 1   | complete    | Thin real sponsor slice through inbound → extraction → evidence → reactive UI → approved controlled send  | Sponsor credentials                       | Full inbound, verdict, delivery, and reply path passed live    |
 | 2   | complete    | Full typed schema, capability access, transitions, idempotency, append-only timeline, deterministic seeds | M0                                        | Functions pushed; capability/seed/webhook tests pass           |
-| 3   | in_progress | Paste/upload/email intake and ClaimEnvelope v1 with bounded retry                                         | M2, AgentMail                             | Live paste extraction passes; forwarded-email smoke remains    |
+| 3   | complete    | Paste/upload/email intake and ClaimEnvelope v1 with bounded retry                                         | M2, AgentMail                             | Paste, screenshot, and forwarded-email paths validated         |
 | 4   | complete    | CPSC control source plus Firecrawl search/scrape/durable crawl, provenance, hashes, rechecks              | M2, Firecrawl                             | Live scrape and bounded durable crawl completed                |
 | 5   | in_progress | Deterministic rule engine and versioned verdict/explanations                                              | M3–M4                                     | Live persistence passes; OpenAI explanation proof remains      |
 | 6   | complete    | Version-bound approval and safe AgentMail channel switch with reply ingestion                             | M5, AgentMail                             | Controlled send delivered; signed replies attached reactively  |
@@ -29,5 +29,5 @@ Statuses: `pending`, `in_progress`, `blocked`, `complete`.
 ## Known external blockers
 
 - A real Convex dev/prod deployment may require interactive Convex account authentication.
-- Real OpenAI, Firecrawl, controlled AgentMail delivery, and signed reply-ingestion evidence is recorded on the development deployment. A distinct forwarded-notice case-creation smoke test remains.
+- Real AgentMail intake/reply, OpenAI extraction, Firecrawl evidence, deterministic verdict, and controlled delivery evidence is recorded on the development deployment.
 - Production deploy, social publishing, final video upload, and hackathon submission require explicit user approval or controlled account action.
