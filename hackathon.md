@@ -12,7 +12,7 @@
 - **Auth:** none
 - **AI models:** gpt-5-mini (configurable with `OPENAI_MODEL`)
 - **Started:** 2026-08-26T14:18:38Z
-- **Last updated:** 2026-08-29T18:40:00Z
+- **Last updated:** 2026-08-30T02:48:10Z
 
 ## Log
 
@@ -79,3 +79,7 @@ Re-audited the original acceptance contract requirement by requirement and repla
 ### 2026-08-29 - pre-release claim-integrity audit
 
 Closed a semantic persistence gap: every source-spanned ClaimEnvelope field now reaches the reactive claim ledger, including sender, retailer/category, order/date fields, urgency/remedy, physical destination, and sensitive requests with confidence. Added deterministic `NP-REMEDY-001`: it blocks only when a known notice remedy type differs from a non-empty remedy set detected in authoritative evidence; absent or ambiguous remedy language remains unresolved. Contradicting remedy edges carry their own rule and locator instead of being mislabeled as a channel conflict. Bounded OpenAI explanation templates are now derived from exact stored conflict rule IDs, preventing a remedy-only conflict from producing sensitive-request prose. The development deployment compiled the expanded schema, 80 unit/integration tests passed, and a real `gpt-5-mini` extraction produced six material claims (including remedy), Tier 1 evidence, the unchanged expected unsafe-channel verdict, verified contact, and live evidence receipt. No email was sent, and these changes are not yet claimed as production-deployed.
+
+### 2026-08-30 - 889e2ec
+
+Deployed the reviewed claim-integrity and evidence-lifecycle release to production `lovely-eel-809` through Convex static hosting. Schema validation passed, no index was deleted, and the capability-expiry compound index was added. Ran the sanitized seed twice; each run converged to exactly three public fixtures. A fresh headless production case exercised real `gpt-5-mini` extraction, Firecrawl authority acquisition, deterministic evaluation, reactive state, and receipt creation: six claims and one authoritative source produced `VERIFIED_RECALL_UNSAFE_CHANNEL` with the independently recovered contact. No approval was consumed and no email was sent. Fresh desktop and mobile contexts each loaded three demos and five privacy-safe proof cards, opened the hero case without horizontal overflow, and reported no browser errors. A 100-event production runtime scan found no failed or non-null-error event; the factual proof backfill recorded only the three sponsor milestones backed by existing production data.

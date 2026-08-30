@@ -1,6 +1,6 @@
 # Submission checklist
 
-Status is evidence-based as of 2026-08-29.
+Status is evidence-based as of 2026-08-30.
 
 ## Required delivery
 
@@ -24,6 +24,7 @@ Status is evidence-based as of 2026-08-29.
 - [x] Production demo cases seeded idempotently
 - [x] Public production `convex.site` URL tested in a fresh browser context
 - [x] Production sponsor-proof panel displays privacy-safe live milestones
+- [x] Final reviewed commit `889e2ec` deployed with idempotent seeds and sanitized production live proof
 - [x] Repository changes committed and pushed to `main`
 - [ ] Demo video recorded and linked (under three minutes)
 - [ ] Public social post published and linked
@@ -36,7 +37,7 @@ Status is evidence-based as of 2026-08-29.
 - [x] Desktop/mobile Playwright coverage exists
 - [x] Automated axe audits report no serious or critical WCAG findings on landing and hero case
 - [x] Production Vite build succeeds
-- [x] Final `npm run verify` passes: 65 unit/integration checks, production build, and 12 Playwright passes (4 project-specific skips)
+- [x] Final `npm run verify` passes: 80 unit/integration checks, production build, and 12 Playwright passes (4 intentional project-specific skips)
 - [x] Convex reviewer completed after live backend functions exist
 - [x] Duplicate webhook, cross-case access, seed idempotency, retention, missing-key, and evidence-change tests pass
 - [x] Local diff, dependency audit, secret-pattern scan, and Convex query/index patterns reviewed
