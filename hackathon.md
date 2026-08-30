@@ -12,7 +12,7 @@
 - **Auth:** none
 - **AI models:** gpt-5-mini (configurable with `OPENAI_MODEL`)
 - **Started:** 2026-08-26T14:18:38Z
-- **Last updated:** 2026-08-30T02:48:10Z
+- **Last updated:** 2026-08-30T09:38:00Z
 
 ## Log
 
@@ -83,3 +83,9 @@ Closed a semantic persistence gap: every source-spanned ClaimEnvelope field now 
 ### 2026-08-30 - 889e2ec
 
 Deployed the reviewed claim-integrity and evidence-lifecycle release to production `lovely-eel-809` through Convex static hosting. Schema validation passed, no index was deleted, and the capability-expiry compound index was added. Ran the sanitized seed twice; each run converged to exactly three public fixtures. A fresh headless production case exercised real `gpt-5-mini` extraction, Firecrawl authority acquisition, deterministic evaluation, reactive state, and receipt creation: six claims and one authoritative source produced `VERIFIED_RECALL_UNSAFE_CHANNEL` with the independently recovered contact. No approval was consumed and no email was sent. Fresh desktop and mobile contexts each loaded three demos and five privacy-safe proof cards, opened the hero case without horizontal overflow, and reported no browser errors. A 100-event production runtime scan found no failed or non-null-error event; the factual proof backfill recorded only the three sponsor milestones backed by existing production data.
+
+### 2026-08-30 - 865b5d6
+
+Completed a product-completeness hardening pass without claiming a production release. Capability-scoped case subscriptions now return explicit least-privilege projections instead of internal case/envelope/component fields. Private consumers can purge uploads, notice text, source quotes, contact values, inbound summaries, and pending outbound bodies; approval payloads are also removed after consumption, rejection, expiry, or evidence invalidation (`convex/cases.ts`, `convex/approvals.ts`, `convex/maintenance.ts`).
+
+Generalized the durable Firecrawl path: Tier 2 targets are conservatively selected from links on Tier 1 CPSC evidence, crawls are same-domain and bounded, stored pages are hashed and contact-extracted, and completion schedules deterministic re-evaluation. Added a schema-validated, best-effort CPSC structured API control lookup that can narrow discovery but cannot set a verdict (`convex/evidencePipeline.ts`, `convex/firecrawl.ts`, `shared/server/cpscApi.ts`). The live case UI now exposes exact source spans, evidence excerpts, rule IDs, missing-identifier prompts, source provenance, and a private-data lifecycle control (`src/LiveApp.tsx`). `npx convex dev --once` passed on `outgoing-snake-653`; `npm run verify` passed with 86 unit/integration checks, a production build, and 12 Playwright passes with 4 intentional project/viewport skips. Production remains on `889e2ec` pending separate release authorization.
