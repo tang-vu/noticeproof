@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { assertTransition } from "../shared/domain/stateMachine";
 import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
+import { purgeOutboundPayload } from "./lib/outboundPayload";
 
 const RECHECK_AFTER_MS = 24 * 60 * 60 * 1000;
 const FOLLOW_UP_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
@@ -27,7 +28,10 @@ export const expireApprovalsAndRawContent = internalMutation({
       .query("approvals")
       .withIndex("by_state_and_expires_at", (q) => q.eq("state", "pending").lt("expiresAt", now))
       .take(100);
-    for (const approval of approvals) await ctx.db.patch(approval._id, { state: "expired" });
+    for (const approval of approvals) {
+      await ctx.db.patch(approval._id, { state: "expired" });
+      await purgeOutboundPayload(ctx, approval._id);
+    }
 
     const expiredCases = await ctx.db
       .query("cases")
@@ -45,21 +49,66 @@ export const expireApprovalsAndRawContent = internalMutation({
     const cases = await ctx.db
       .query("cases")
       .withIndex("by_raw_retention", (q) => q.lt("rawRetentionUntil", now))
-      .take(25);
+      .take(5);
     for (const caseDocument of cases) {
-      const notices = await ctx.db
-        .query("notices")
-        .withIndex("by_case_id", (q) => q.eq("caseId", caseDocument._id))
-        .take(10);
+      const [notices, claims, communications] = await Promise.all([
+        ctx.db
+          .query("notices")
+          .withIndex("by_case_id", (q) => q.eq("caseId", caseDocument._id))
+          .take(10),
+        ctx.db
+          .query("claims")
+          .withIndex("by_case_id", (q) => q.eq("caseId", caseDocument._id))
+          .take(100),
+        ctx.db
+          .query("communications")
+          .withIndex("by_case_id", (q) => q.eq("caseId", caseDocument._id))
+          .take(50),
+      ]);
+      const storageIds = new Set(
+        notices.flatMap((notice) => [
+          ...(notice.rawStorageId ? [notice.rawStorageId] : []),
+          ...notice.attachmentMetadata.flatMap((attachment) =>
+            attachment.storageId ? [attachment.storageId] : [],
+          ),
+        ]),
+      );
+      for (const storageId of storageIds) await ctx.storage.delete(storageId);
       for (const notice of notices) {
-        if (notice.rawStorageId) await ctx.storage.delete(notice.rawStorageId);
-        if (notice.sanitizedBody) {
-          await ctx.db.patch(notice._id, { sanitizedBody: "[expired by retention policy]" });
+        await ctx.db.patch(notice._id, {
+          subject: "[expired by retention policy]",
+          sender: "[expired by retention policy]",
+          bodyPreview: "[private source content expired by retention policy]",
+          sanitizedBody: "[private source content expired by retention policy]",
+          rawStorageId: undefined,
+          attachmentMetadata: notice.attachmentMetadata.map(({ mediaType, size }) => ({
+            name: "[expired]",
+            mediaType,
+            size,
+          })),
+        });
+      }
+      for (const claim of claims) {
+        await ctx.db.patch(claim._id, {
+          rawValue: "[source quote expired]",
+          sourceSpan: { ...claim.sourceSpan, quote: "[source quote expired]" },
+          ...(["claimed_sender", "email", "phone", "order_number", "physical_destination"].includes(
+            claim.claimType,
+          )
+            ? { normalizedValue: "[private value expired]" }
+            : {}),
+        });
+      }
+      for (const communication of communications) {
+        if (communication.direction === "inbound") {
+          await ctx.db.patch(communication._id, {
+            redactedSummary: "[private inbound summary expired by retention policy]",
+          });
         }
       }
       await ctx.db.patch(caseDocument._id, {
         rawContentPurgedAt: now,
-        rawRetentionUntil: now + 10 * 365 * 24 * 60 * 60 * 1000,
+        rawRetentionUntil: undefined,
         updatedAt: now,
       });
     }
@@ -100,6 +149,7 @@ export const scheduleEvidenceRechecks = internalMutation({
             .take(20);
           for (const approval of pending) {
             await ctx.db.patch(approval._id, { state: "expired" });
+            await purgeOutboundPayload(ctx, approval._id);
             approvalsExpired += 1;
           }
         }

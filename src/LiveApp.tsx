@@ -65,6 +65,7 @@ function LiveCase({ publicId }: { publicId: string }) {
   const rejectDraft = useMutation(api.approvals.rejectDraft);
   const retryExtraction = useMutation(api.extraction.start);
   const updateResolution = useMutation(api.cases.updateResolution);
+  const purgePrivateSourceData = useMutation(api.cases.purgePrivateSourceData);
   const [subject, setSubject] = useState("Request for verified recall remedy instructions");
   const [body, setBody] = useState(
     "Please confirm the next steps and identifiers required for this recall remedy.",
@@ -201,6 +202,16 @@ function LiveCase({ publicId }: { publicId: string }) {
             <p className="eyebrow">Deterministic verdict · v{verdict.version}</p>
             <h2>{verdict.code.replaceAll("_", " ")}</h2>
             <p>{verdict.summary}</p>
+            <dl className="live-verdict-facts">
+              <div>
+                <dt>Last checked</dt>
+                <dd>{new Date(result.case.lastCheckedAt ?? verdict.createdAt).toLocaleString()}</dd>
+              </div>
+              <div>
+                <dt>Rule engine</dt>
+                <dd>{verdict.ruleEngineVersion}</dd>
+              </div>
+            </dl>
             <div className="live-rule-list">
               {verdict.ruleResults.map((rule) => (
                 <span key={rule.ruleId} data-outcome={rule.outcome}>
@@ -223,6 +234,34 @@ function LiveCase({ publicId }: { publicId: string }) {
                 separately.
               </p>
             )}
+            {verdict.missingIdentifiers.length ? (
+              <div className="live-clarification" role="note">
+                <strong>One detail can resolve this case.</strong>
+                <p>
+                  Check the product label, packaging, receipt, or underside for:{" "}
+                  {verdict.missingIdentifiers.join(", ")}.
+                </p>
+                <small>
+                  Do not enter passwords, payment details, or one-time codes. Product identifiers
+                  are used only to rerun exact scope matching.
+                </small>
+              </div>
+            ) : null}
+            {verdict.blockingReasons.length ? (
+              <div className="live-blocking-reasons">
+                <strong>Why action remains blocked</strong>
+                <ul>
+                  {verdict.blockingReasons.map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {verdict.eligibleActions.length ? (
+              <p className="live-eligible-actions">
+                Eligible now: {verdict.eligibleActions.join(" · ").replaceAll("_", " ")}
+              </p>
+            ) : null}
           </section>
         ) : null}
         <section className="live-panel">
@@ -239,18 +278,34 @@ function LiveCase({ publicId }: { publicId: string }) {
                 const edges = result.evidenceEdges.filter((edge) => edge.claimId === claim._id);
                 return (
                   <li key={claim._id}>
-                    <span>{claim.claimType.replaceAll("_", " ")}</span>
+                    <div className="live-claim-heading">
+                      <span>{claim.claimType.replaceAll("_", " ")}</span>
+                      <small>{Math.round(claim.confidence * 100)}% extraction confidence</small>
+                    </div>
                     <strong>{claim.normalizedValue}</strong>
+                    <q>{claim.sourceSpan.quote}</q>
                     <small>
-                      {edges.length
-                        ? edges
-                            .map((edge) => {
-                              const source = sourceById.get(edge.sourceId);
-                              return `${edge.relation} · ${source?.canonicalDomain ?? "source"}`;
-                            })
-                            .join(" · ")
-                        : "Awaiting exact evidence alignment"}
+                      Notice characters {claim.sourceSpan.start}–{claim.sourceSpan.end}
+                      {claim.matchCritical ? " · exact identifier required" : ""}
                     </small>
+                    {edges.length ? (
+                      <ul className="live-edge-list">
+                        {edges.map((edge) => {
+                          const source = sourceById.get(edge.sourceId);
+                          return (
+                            <li key={edge._id} data-relation={edge.relation}>
+                              <span>
+                                {edge.relation} · {edge.ruleId} ·{" "}
+                                {source?.canonicalDomain ?? "source"}
+                              </span>
+                              <q>{edge.excerpt}</q>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <small>Awaiting exact evidence alignment</small>
+                    )}
                   </li>
                 );
               })}
@@ -264,10 +319,28 @@ function LiveCase({ publicId }: { publicId: string }) {
           <h2>{result.sources.length} authoritative sources</h2>
           {result.sources.length ? (
             result.sources.map((source) => (
-              <p key={source._id}>
-                Tier {source.authorityTier} · {source.canonicalDomain} · {source.status}
-                {source.contentHash ? ` · ${source.contentHash.slice(0, 12)}…` : ""}
-              </p>
+              <article className="live-source-card" key={source._id}>
+                <div>
+                  <span>Tier {source.authorityTier}</span>
+                  <span>{source.sourceType.replaceAll("_", " ")}</span>
+                  <span>{source.status}</span>
+                </div>
+                <h3>{source.title}</h3>
+                <p>
+                  {source.canonicalDomain} · fetched {new Date(source.fetchedAt).toLocaleString()}
+                  {source.contentHash ? ` · SHA-256 ${source.contentHash.slice(0, 12)}…` : ""}
+                </p>
+                {source.verifiesContact && source.verifiedEmail ? (
+                  <p className="live-source-trust-note">
+                    Verifies <strong>{source.verifiedEmail}</strong>. This exact address is trusted
+                    because it appears in Tier {source.authorityTier} evidence—even if its domain is
+                    not the manufacturer brand.
+                  </p>
+                ) : null}
+                <a href={source.canonicalUrl} target="_blank" rel="noreferrer">
+                  Open authoritative source ↗
+                </a>
+              </article>
             ))
           ) : (
             <p>No evidence has arrived yet. Absence of evidence is not a safety result.</p>
@@ -510,6 +583,52 @@ function LiveCase({ publicId }: { publicId: string }) {
             <p className="form-status" role="status">
               {actionStatus}
             </p>
+          </section>
+        ) : null}
+        {!result.case.isPublicFixture ? (
+          <section className="live-panel live-privacy-panel">
+            <p className="eyebrow">Privacy lifecycle</p>
+            <h2>
+              {result.case.rawContentPurgedAt
+                ? "Private source content has been purged"
+                : "You control the private source copy"}
+            </h2>
+            <p>
+              {result.case.rawContentPurgedAt
+                ? `Purged ${new Date(result.case.rawContentPurgedAt).toLocaleString()}. Derived hashes and public authority evidence remain so the prior verdict can still be audited.`
+                : `Automatic raw-content expiry is scheduled before ${new Date(result.case.expiresAt).toLocaleDateString()}. You can purge it now; this closes unresolved work, expires pending approval, deletes uploads, and removes notice quotes and private contact values.`}
+            </p>
+            {!result.case.rawContentPurgedAt ? (
+              <button
+                className="button danger"
+                type="button"
+                onClick={() => {
+                  if (
+                    !window.confirm(
+                      "Purge private source content and close unresolved work? This cannot be undone.",
+                    )
+                  )
+                    return;
+                  setActionStatus("Purging private source content and revoking pending actions…");
+                  void purgePrivateSourceData({
+                    publicId,
+                    ...(capabilityToken ? { capabilityToken } : {}),
+                  })
+                    .then(() => setActionStatus("Private source content was purged."))
+                    .catch(() =>
+                      setActionStatus(
+                        "Purge could not complete safely. Retry after current work finishes.",
+                      ),
+                    );
+                }}
+              >
+                Purge private source data
+              </button>
+            ) : null}
+            <small>
+              NoticeProof cannot erase copies already delivered through AgentMail; the application
+              keeps only redacted communication summaries after this purge.
+            </small>
           </section>
         ) : null}
       </div>

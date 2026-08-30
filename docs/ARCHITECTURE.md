@@ -40,7 +40,9 @@ The app schema separates cases, sanitized notice metadata, claim envelopes, norm
 
 Public seeded demos are explicitly allowlisted sanitized fixtures. Private cases use a 256-bit capability whose SHA-256 hash is stored; the secret is not placed in server-visible paths or logs. A tracked forwarding session adds a separate 96-bit subject code whose hash is indexed for one-time, 24-hour attachment; that code cannot authorize reads and the browser-held capability never enters the email. Full authentication is intentionally deferred to preserve a zero-invite public demo, not replaced with client-supplied identity.
 
-An hourly indexed maintenance job revokes private capability access after the case expiry and separately purges retained raw content. A six-hour job schedules bounded stale-evidence rechecks for active private cases, and a daily job records human follow-up reminders for trusted threads awaiting replies. Public fixtures are excluded from sponsor-consuming scheduled work.
+An hourly indexed maintenance job revokes private capability access after the case expiry and separately purges retained raw content. The capability holder can also purge immediately: uploads, notice text, private claim quotes/contact values, inbound summaries, and pending outbound payloads are removed before unresolved work closes. A six-hour job schedules bounded stale-evidence rechecks for active private cases, and a daily job records human follow-up reminders for trusted threads awaiting replies. Public fixtures are excluded from sponsor-consuming scheduled work.
+
+The CPSC structured API is a best-effort control source that can narrow an exact recall-number lookup; its payload is schema-validated and it never establishes a verdict alone. Firecrawl fetches the allowlisted Tier 1 record. Manufacturer crawl targets must be HTTPS, non-punycode, non-social URLs linked directly by that Tier 1 page and correlated by manufacturer/domain or recall-support path. Crawl completion content-hashes at most 12 stored same-domain pages, extracts only contact mailboxes in consumer/recall/support context, and schedules deterministic re-evaluation.
 
 OpenAI explanations are stored separately from append-only verdicts. The model receives only the verdict code plus stored rule IDs/outcomes and can select only verdict-specific template IDs and existing rule IDs. TypeScript rejects out-of-policy selections and renders fixed consumer-language templates, preventing explanation text from introducing new facts or altering authority, recipient, eligibility, or verdict.
 
@@ -51,7 +53,7 @@ OpenAI explanations are stored separately from append-only verdicts. The model r
 3. Schedule only an internal action.
 4. Append outcome events idempotently; converge out-of-order delivery events by monotonic status rules.
 
-No action is initiated from an LLM response. External failures select only `VERIFICATION_FAILED_RETRYABLE`.
+No action is initiated from an LLM response. Full outbound bodies are held only while an approval is pending and are deleted after consumption, rejection, expiry, or evidence invalidation. External failures select only `VERIFICATION_FAILED_RETRYABLE`.
 
 ## Current implementation status
 

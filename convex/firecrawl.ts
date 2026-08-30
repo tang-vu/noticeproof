@@ -4,6 +4,8 @@ import { assertTransition } from "../shared/domain/stateMachine";
 import { components, internal } from "./_generated/api";
 import { internalAction, internalMutation, internalQuery, query } from "./_generated/server";
 import { requireCaseAccess, sha256 } from "./lib/access";
+import { purgeOutboundPayload } from "./lib/outboundPayload";
+import { redactSensitiveText } from "../shared/domain/redaction";
 
 const firecrawl = new FirecrawlClient(components.firecrawl);
 
@@ -133,6 +135,7 @@ export const persistCpscEvidence = internalMutation({
         .take(20);
       for (const approval of pendingApprovals) {
         await ctx.db.patch(approval._id, { state: "expired" });
+        await purgeOutboundPayload(ctx, approval._id);
       }
       if (caseDocument.currentState === "AWAITING_APPROVAL") {
         assertTransition(caseDocument.currentState, "ACQUIRING_EVIDENCE");
@@ -232,8 +235,10 @@ export const startManufacturerCrawl = internalAction({
     const result = await firecrawl.startCrawl(ctx, {
       url: target.url,
       options: {
-        includePaths: ["^/minifridgerecall/?(?:.*)?$"],
-        limit: 5,
+        includePaths: [
+          `^${new URL(target.url).pathname.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\/$/, "")}/?(?:.*)?$`,
+        ],
+        limit: 12,
         maxDiscoveryDepth: 2,
         crawlEntireDomain: false,
         allowExternalLinks: false,
@@ -326,6 +331,114 @@ export const onManufacturerCrawlComplete = internalMutation({
             : "Manufacturer crawl ended without producing authoritative evidence.",
         timestamp: now,
         idempotencyKey: key,
+      });
+    }
+    if (args.status === "completed") {
+      await ctx.scheduler.runAfter(0, internal.firecrawl.finalizeManufacturerCrawl, {
+        crawlId: args.crawlId,
+      });
+    }
+    return null;
+  },
+});
+
+export const finalizeManufacturerCrawl = internalAction({
+  args: { crawlId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const pages = await ctx.runQuery(components.firecrawl.crawl.listPages, {
+      crawlId: args.crawlId,
+      paginationOpts: { numItems: 12, cursor: null },
+    });
+    const combined = pages.page
+      .map((page) => page.markdown ?? page.summary ?? "")
+      .join("\n\n")
+      .slice(0, 500_000);
+    const verifiedEmail = verifiedManufacturerEmail(combined);
+    await ctx.runMutation(internal.firecrawl.persistManufacturerExtraction, {
+      crawlId: args.crawlId,
+      contentHash: await sha256(combined),
+      ...(verifiedEmail ? { verifiedEmail } : {}),
+      pageCount: pages.page.length,
+    });
+    return null;
+  },
+});
+
+function verifiedManufacturerEmail(text: string): string | undefined {
+  const matches = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) ?? [];
+  return matches
+    .find((email) => {
+      const index = text.toLowerCase().indexOf(email.toLowerCase());
+      const context = text.slice(Math.max(0, index - 400), index + email.length + 200);
+      return /consumer|recall|contact|support|remedy/i.test(context);
+    })
+    ?.toLowerCase();
+}
+
+export const persistManufacturerExtraction = internalMutation({
+  args: {
+    crawlId: v.string(),
+    contentHash: v.string(),
+    verifiedEmail: v.optional(v.string()),
+    pageCount: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const source = await ctx.db
+      .query("sources")
+      .withIndex("by_crawl_id", (q) => q.eq("crawlId", args.crawlId))
+      .unique();
+    if (!source) return null;
+    const caseDocument = await ctx.db.get("cases", source.caseId);
+    if (!caseDocument) return null;
+    const now = Date.now();
+    await ctx.db.patch(source._id, {
+      contentHash: args.contentHash,
+      extractionStatus: "valid",
+      verifiesContact: Boolean(args.verifiedEmail),
+      ...(args.verifiedEmail ? { verifiedEmail: args.verifiedEmail } : {}),
+      fetchedAt: now,
+    });
+    const idempotencyKey = `firecrawl:${args.crawlId}:extracted:${args.contentHash}`;
+    const prior = await ctx.db
+      .query("timelineEvents")
+      .withIndex("by_idempotency_key", (q) => q.eq("idempotencyKey", idempotencyKey))
+      .unique();
+    if (!prior) {
+      await ctx.db.insert("timelineEvents", {
+        caseId: source.caseId,
+        eventType: "evidence.manufacturer_crawl_extracted",
+        actorType: "system",
+        visibility: caseDocument.isPublicFixture ? "public" : "private",
+        payloadVersion: "1",
+        summary: args.verifiedEmail
+          ? `A verified contact was recovered from ${args.pageCount} authority-linked manufacturer page(s).`
+          : `${args.pageCount} authority-linked manufacturer page(s) were checked; no email action was established.`,
+        metadataJson: JSON.stringify({
+          pageCount: args.pageCount,
+          contact: args.verifiedEmail ? redactSensitiveText(args.verifiedEmail) : undefined,
+        }),
+        timestamp: now,
+        idempotencyKey,
+      });
+    }
+    const recheckable = new Set([
+      "ACTIONABLE",
+      "NEEDS_IDENTIFIER",
+      "BLOCKED_CONFLICT",
+      "NO_AUTHORITATIVE_EVIDENCE",
+      "VERIFICATION_FAILED_RETRYABLE",
+    ]);
+    if (recheckable.has(caseDocument.currentState)) {
+      assertTransition(caseDocument.currentState, "ACQUIRING_EVIDENCE");
+      await ctx.db.patch(caseDocument._id, {
+        currentState: "ACQUIRING_EVIDENCE",
+        nextAction: "Manufacturer evidence arrived. Re-evaluating verified channels.",
+        updatedAt: now,
+      });
+      await ctx.scheduler.runAfter(0, internal.evidencePipeline.acquireAndEvaluate, {
+        caseId: caseDocument._id,
       });
     }
     return null;

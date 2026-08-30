@@ -17,6 +17,7 @@ import {
   query,
 } from "./_generated/server";
 import { requireCaseAccess, requireCaseWriteAccess, sha256 } from "./lib/access";
+import { purgeOutboundPayload } from "./lib/outboundPayload";
 import { appendEvidenceReceipt } from "./lib/receipts";
 
 const agentmail = new AgentMail(components.agentmail);
@@ -115,7 +116,10 @@ export const createDraft = mutation({
         q.eq("caseId", caseDocument._id).eq("state", "pending"),
       )
       .take(20);
-    for (const approval of pending) await ctx.db.patch(approval._id, { state: "expired" });
+    for (const approval of pending) {
+      await ctx.db.patch(approval._id, { state: "expired" });
+      await purgeOutboundPayload(ctx, approval._id);
+    }
 
     const redactedPreview = redactSensitiveText(`${sanitizedSubject}\n\n${sanitizedBody}`).slice(
       0,
@@ -225,6 +229,7 @@ export const approveAndSend = mutation({
     });
     const now = Date.now();
     await ctx.db.patch(approval._id, { state: "consumed", approvedAt: now, consumedAt: now });
+    await purgeOutboundPayload(ctx, approval._id);
     await ctx.db.patch(caseDocument._id, { currentState: "AWAITING_REPLY", updatedAt: now });
     await ctx.db.insert("communications", {
       caseId: caseDocument._id,
@@ -411,6 +416,7 @@ export const rejectDraft = mutation({
     assertTransition(caseDocument.currentState, "ACTIONABLE");
     const now = Date.now();
     await ctx.db.patch(approval._id, { state: "rejected" });
+    await purgeOutboundPayload(ctx, approval._id);
     await ctx.db.patch(caseDocument._id, {
       currentState: "ACTIONABLE",
       nextAction: "Draft cancelled. Review or edit a new message to the verified recipient.",

@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { sanitizePlainText } from "../shared/domain/redaction";
+import { redactSensitiveText, sanitizePlainText } from "../shared/domain/redaction";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
@@ -83,7 +83,7 @@ export const onMessageReceived = internalMutation({
         agentmailMessageId: messageId,
         direction: "inbound",
         deliveryState: "received",
-        redactedSummary: body.slice(0, 500),
+        redactedSummary: redactSensitiveText(body).slice(0, 500),
         attachmentMetadata: [],
         receivedAt: now,
         createdAt: now,
@@ -187,7 +187,7 @@ export const onMessageReceived = internalMutation({
       agentmailMessageId: messageId,
       direction: "inbound",
       deliveryState: "received",
-      redactedSummary: body.slice(0, 500),
+      redactedSummary: redactSensitiveText(body).slice(0, 500),
       attachmentMetadata: [],
       receivedAt: now,
       createdAt: now,

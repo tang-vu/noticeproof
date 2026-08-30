@@ -13,6 +13,8 @@ A URL does not become authoritative because it looks official or ranks highly. N
 
 Each source stores canonical URL/domain, source type, discovery parent, authority tier, fetch/update time, status, title, SHA-256 content hash, optional private snapshot, truncation, extraction state, and whether it independently verifies a contact.
 
+The structured CPSC API is used only to narrow exact recall-number discovery and is validated as an external payload. A network failure or malformed response does not produce a substantive verdict. Tier 2 crawl targets are selected from the links actually returned with Tier 1 evidence, never from search position or the inbound notice.
+
 ## Claim graph
 
 A validated `ClaimEnvelope` is normalized into individual `claims`. The ledger preserves every source-spanned material field: claimed sender, retailer, manufacturer, product/category, identifiers, order and date fields, hazard/urgency/remedy, channels/destinations, and sensitive requests. An `evidenceEdge` links one claim to one source as `supports`, `contradicts`, `narrows`, or `unresolved`, with a deterministic match method, rule ID, locator, and short excerpt. Excerpts are evidence locators, not wholesale page copies.

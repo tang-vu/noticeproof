@@ -30,7 +30,7 @@ NoticeProof is not a recall feed: its object is a particular notice in an anxiou
 
 - **Convex** is the operational core: typed indexed data, capability-scoped cases, transactional state transitions, component state, storage, HTTP webhooks, schedulers, idempotency, append-only verdicts/timelines/receipts, and reactive UI subscriptions.
 - **OpenAI Responses API** performs strict `ClaimEnvelope` extraction and a separately stored bounded explanation. Every source-spanned material field reaches the claim ledger. For explanations, the model may select only templates established by the exact stored rule IDs; TypeScript renders the final text. `OPENAI_MODEL` defaults to `gpt-5-mini` and stays server-side.
-- **Firecrawl’s Convex component** performs search/scrape and a bounded durable manufacturer-domain crawl whose pages and progress are reactive Convex state. Search position never grants authority.
+- **Firecrawl’s Convex component** performs search/scrape and a bounded durable manufacturer-domain crawl selected only from links on Tier 1 evidence; stored pages and progress are reactive Convex state. Search position never grants authority.
 - **AgentMail’s Convex component** owns the persistent inbox, verified/deduplicated inbound events, threads, durable delivery, and replies. A send requires a current single-use approval and independently verified recipient.
 
 The components are registered in `convex/convex.config.ts`. Production visibly exposes privacy-safe proof of signed AgentMail intake, OpenAI extraction and bounded explanation, Firecrawl-backed authority evidence, and Convex realtime state. The development deployment additionally proves controlled delivery and reply attachment: an approved message reached the explicitly labeled demo destination, and signed replies attached to the original trusted thread.
@@ -43,6 +43,7 @@ The components are registered in `convex/convex.config.ts`. Production visibly e
 - Raw email HTML is never rendered; URL schemes, credentials, local/private hosts, trackers, punycode, and registrable domains are handled explicitly.
 - Forwarding subject codes are random, single-use, expire after 24 hours, and cannot open a case; the separate 256-bit capability stays in browser session storage.
 - Private capability access is revoked after case expiry; raw content has separate bounded retention cleanup. Active live cases receive scheduled evidence rechecks that invalidate stale approval.
+- A private capability holder can immediately purge uploaded/raw notice content, source quotes, private contact values, and pending outbound payloads. The case closes unresolved while derived hashes and public authority evidence remain auditable.
 - Demo mode must show intended and actual recipients separately. The fixture approval dialog never sends.
 - A sent message or reply never marks a remedy complete; only the consumer can confirm instructions and resolve their case, with each step appended to a new receipt.
 - NoticeProof is not affiliated with CPSC or a manufacturer, does not provide legal advice, and cannot guarantee coverage or a completed remedy.

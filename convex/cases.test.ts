@@ -289,7 +289,20 @@ describe("Convex case boundaries", () => {
           "sensitive_request",
         ]),
       );
-      expect(result.claimEnvelopes[0]?.claimedRemedyType).toBe("refund");
+      const claimedRemedyType = await t.run(async (ctx) => {
+        const caseDocument = await ctx.db
+          .query("cases")
+          .withIndex("by_public_id", (q) => q.eq("publicId", created.publicId))
+          .unique();
+        if (!caseDocument) throw new Error("missing case");
+        return (
+          await ctx.db
+            .query("claimEnvelopes")
+            .withIndex("by_case_id", (q) => q.eq("caseId", caseDocument._id))
+            .first()
+        )?.claimedRemedyType;
+      });
+      expect(claimedRemedyType).toBe("refund");
       await t.finishAllScheduledFunctions(vi.runAllTimers);
     } finally {
       vi.useRealTimers();
@@ -460,7 +473,16 @@ describe("Convex case boundaries", () => {
     });
     expect(rejected.case.currentState).toBe("ACTIONABLE");
     expect(rejected.approvals[0]?.state).toBe("rejected");
-  });
+    expect(
+      await t.run(
+        async (ctx) =>
+          await ctx.db
+            .query("outboundPayloads")
+            .withIndex("by_approval_id", (q) => q.eq("approvalId", draft.approvalId))
+            .unique(),
+      ),
+    ).toBeNull();
+  }, 30_000);
 
   it("blocks an unverified recipient and sensitive outbound payload", async () => {
     const t = convexTest(schema, modules);
@@ -516,6 +538,15 @@ describe("Convex case boundaries", () => {
     }));
     expect(result.approval?.state).toBe("expired");
     expect(result.caseDocument?.currentState).toBe("ACQUIRING_EVIDENCE");
+    expect(
+      await t.run(
+        async (ctx) =>
+          await ctx.db
+            .query("outboundPayloads")
+            .withIndex("by_approval_id", (q) => q.eq("approvalId", draft.approvalId))
+            .unique(),
+      ),
+    ).toBeNull();
   });
 
   it("schedules bounded stale evidence rechecks and expires prior approval", async () => {
@@ -544,6 +575,15 @@ describe("Convex case boundaries", () => {
         "expired",
       );
       expect(bundle.timeline[0]?.eventType).toBe("evidence.scheduled_recheck_started");
+      expect(
+        await t.run(
+          async (ctx) =>
+            await ctx.db
+              .query("outboundPayloads")
+              .withIndex("by_approval_id", (q) => q.eq("approvalId", draft.approvalId))
+              .unique(),
+        ),
+      ).toBeNull();
       expect(
         await t.mutation(internal.maintenance.scheduleEvidenceRechecks, {
           now: Date.now() + 25 * 60 * 60 * 1000,
@@ -642,15 +682,22 @@ describe("Convex case boundaries", () => {
     expect(result.notices).toHaveLength(1);
   });
 
-  it("deduplicates identical pasted notices", async () => {
+  it("allows separate consumers to verify the same notice without cross-case leakage", async () => {
     const t = convexTest(schema, modules);
     const notice = {
       subject: "Recall",
       sender: "sender@example.test",
       body: "A unique notice body for deterministic deduplication.",
     };
-    await t.mutation(api.cases.createPasted, notice);
-    await expect(t.mutation(api.cases.createPasted, notice)).rejects.toThrow("DUPLICATE_NOTICE");
+    const first = await t.mutation(api.cases.createPasted, notice);
+    const second = await t.mutation(api.cases.createPasted, notice);
+    expect(second.publicId).not.toBe(first.publicId);
+    await expect(
+      t.query(api.cases.get, {
+        publicId: first.publicId,
+        capabilityToken: second.capabilityToken,
+      }),
+    ).rejects.toThrow("CASE_ACCESS_DENIED");
   });
 
   it("stores an uploaded screenshot privately with bounded metadata", async () => {
@@ -668,8 +715,23 @@ describe("Convex case boundaries", () => {
       capabilityToken: created.capabilityToken,
     });
     expect(result.case.inputKind).toBe("screenshot");
-    expect(result.notices[0]?.rawStorageId).toBe(storageId);
     expect(result.notices[0]?.attachmentMetadata[0]?.name).toBe("recall.png");
+    expect("rawStorageId" in (result.notices[0] ?? {})).toBe(false);
+    expect("storageId" in (result.notices[0]?.attachmentMetadata[0] ?? {})).toBe(false);
+    const storedRawId = await t.run(async (ctx) => {
+      const caseDocument = await ctx.db
+        .query("cases")
+        .withIndex("by_public_id", (q) => q.eq("publicId", created.publicId))
+        .unique();
+      if (!caseDocument) throw new Error("missing case");
+      return (
+        await ctx.db
+          .query("notices")
+          .withIndex("by_case_id", (q) => q.eq("caseId", caseDocument._id))
+          .first()
+      )?.rawStorageId;
+    });
+    expect(storedRawId).toBe(storageId);
   });
 
   it("attaches a forwarded message to its one-time capability-scoped session", async () => {
@@ -693,10 +755,27 @@ describe("Convex case boundaries", () => {
       publicId: created.publicId,
       capabilityToken: created.capabilityToken,
     });
-    expect(result.case.forwardingClaimedAt).toBeTypeOf("number");
     expect(result.case.currentState).toBe("EXTRACTING_CLAIMS");
     expect(result.notices).toHaveLength(1);
-    expect(result.notices[0]?.agentmailInboundId).toBe("message_tracked");
+    expect("forwardingClaimedAt" in result.case).toBe(false);
+    expect("agentmailInboundId" in (result.notices[0] ?? {})).toBe(false);
+    const privateMapping = await t.run(async (ctx) => {
+      const caseDocument = await ctx.db
+        .query("cases")
+        .withIndex("by_public_id", (q) => q.eq("publicId", created.publicId))
+        .unique();
+      if (!caseDocument) throw new Error("missing case");
+      const notice = await ctx.db
+        .query("notices")
+        .withIndex("by_case_id", (q) => q.eq("caseId", caseDocument._id))
+        .first();
+      return {
+        forwardingClaimedAt: caseDocument.forwardingClaimedAt,
+        agentmailInboundId: notice?.agentmailInboundId,
+      };
+    });
+    expect(privateMapping.forwardingClaimedAt).toBeTypeOf("number");
+    expect(privateMapping.agentmailInboundId).toBe("message_tracked");
   });
 
   it("does not cross-attach or reuse one-time forwarding sessions", async () => {
@@ -836,7 +915,63 @@ describe("Convex case boundaries", () => {
       publicId: created.publicId,
       capabilityToken: created.capabilityToken,
     });
-    expect(caseBundle.notices[0]?.sanitizedBody).toBe("[expired by retention policy]");
+    expect(caseBundle.notices[0]?.bodyPreview).toBe(
+      "[private source content expired by retention policy]",
+    );
+    expect("sanitizedBody" in (caseBundle.notices[0] ?? {})).toBe(false);
+  });
+
+  it("lets a private capability holder purge source data and close the case", async () => {
+    const t = convexTest(schema, modules);
+    const image = new Blob([new Uint8Array([137, 80, 78, 71])], { type: "image/png" });
+    const storageId = await t.run(async (ctx) => await ctx.storage.store(image));
+    const created = await t.mutation(api.cases.createScreenshot, {
+      storageId,
+      fileName: "private-recall.png",
+      mediaType: "image/png",
+      size: image.size,
+    });
+
+    await expect(
+      t.mutation(api.cases.purgePrivateSourceData, {
+        publicId: created.publicId,
+        capabilityToken: "wrong-capability",
+      }),
+    ).rejects.toThrow("CASE_ACCESS_DENIED");
+
+    const firstPurge = await t.mutation(api.cases.purgePrivateSourceData, {
+      publicId: created.publicId,
+      capabilityToken: created.capabilityToken,
+    });
+    expect(firstPurge.state).toBe("CLOSED_UNRESOLVED");
+    expect(firstPurge.rawContentPurgedAt).toBeTypeOf("number");
+    const repeatedPurge = await t.mutation(api.cases.purgePrivateSourceData, {
+      publicId: created.publicId,
+      capabilityToken: created.capabilityToken,
+    });
+    expect(repeatedPurge).toEqual(firstPurge);
+
+    const bundle = await t.query(api.cases.get, {
+      publicId: created.publicId,
+      capabilityToken: created.capabilityToken,
+    });
+    expect(bundle.case.currentState).toBe("CLOSED_UNRESOLVED");
+    expect(bundle.case.rawContentPurgedAt).toBeTypeOf("number");
+    expect(bundle.notices[0]?.subject).toBe("[purged by consumer]");
+    expect(bundle.notices[0]?.attachmentMetadata[0]?.name).toBe("[purged]");
+    const privateNotice = await t.run(async (ctx) => {
+      const caseDocument = await ctx.db
+        .query("cases")
+        .withIndex("by_public_id", (q) => q.eq("publicId", created.publicId))
+        .unique();
+      if (!caseDocument) throw new Error("missing case");
+      return await ctx.db
+        .query("notices")
+        .withIndex("by_case_id", (q) => q.eq("caseId", caseDocument._id))
+        .first();
+    });
+    expect(privateNotice?.rawStorageId).toBeUndefined();
+    expect(privateNotice?.attachmentMetadata[0]?.storageId).toBeUndefined();
   });
 
   it("revokes private capability access after case expiry", async () => {

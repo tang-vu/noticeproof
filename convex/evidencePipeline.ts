@@ -1,6 +1,7 @@
 import { FirecrawlClient } from "@firecrawl/firecrawl-convex";
 import { v } from "convex/values";
 import { hashCanonical } from "../shared/domain/hashing";
+import { selectAuthorityLinkedManufacturerUrl } from "../shared/domain/manufacturerEvidence";
 import type { RemedyType } from "../shared/domain/constants";
 import { recordIntegrationProof } from "./integrationProofs";
 import { assertTransition } from "../shared/domain/stateMachine";
@@ -10,6 +11,7 @@ import { components, internal } from "./_generated/api";
 import { env, internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { sha256 } from "./lib/access";
 import { appendEvidenceReceipt } from "./lib/receipts";
+import { lookupCpscRecall } from "../shared/server/cpscApi";
 
 const firecrawl = new FirecrawlClient(components.firecrawl);
 
@@ -18,6 +20,8 @@ const acquisitionInput = v.object({
   claimEnvelopeHash: v.string(),
   recallId: v.optional(v.string()),
   productName: v.optional(v.string()),
+  manufacturer: v.optional(v.string()),
+  tier2VerifiedEmail: v.optional(v.string()),
   claimedRemedyType: v.optional(
     v.union(
       v.literal("refund"),
@@ -41,6 +45,7 @@ const evaluatedSource = v.object({
   matchedClaimIds: v.array(v.id("claims")),
   contradictedClaimIds: v.array(v.id("claims")),
   excerptsByClaimJson: v.string(),
+  linkedManufacturerUrl: v.optional(v.string()),
 });
 
 function canonicalCpscRecallUrl(raw: string): string | null {
@@ -126,11 +131,24 @@ export const loadAcquisitionInput = internalQuery({
       .query("claims")
       .withIndex("by_envelope_id", (q) => q.eq("claimEnvelopeId", envelope._id))
       .take(100);
+    const sources = await ctx.db
+      .query("sources")
+      .withIndex("by_case_id", (q) => q.eq("caseId", args.caseId))
+      .take(50);
+    const tier2Contact = sources.find(
+      (source) =>
+        source.authorityTier === 2 &&
+        source.extractionStatus === "valid" &&
+        source.verifiesContact &&
+        source.verifiedEmail,
+    );
     return {
       publicId: caseDocument.publicId,
       claimEnvelopeHash: envelope.contentHash,
       ...(envelope.recallId ? { recallId: envelope.recallId } : {}),
       ...(envelope.productName ? { productName: envelope.productName } : {}),
+      ...(envelope.manufacturer ? { manufacturer: envelope.manufacturer } : {}),
+      ...(tier2Contact?.verifiedEmail ? { tier2VerifiedEmail: tier2Contact.verifiedEmail } : {}),
       ...(envelope.claimedRemedyType ? { claimedRemedyType: envelope.claimedRemedyType } : {}),
       requestedSensitiveKinds: envelope.requestedSensitiveKinds,
       claims: claims.map((claim) => ({
@@ -164,6 +182,15 @@ export const acquireAndEvaluate = internalAction({
         return null;
       }
 
+      let controlUrls: string[] = [];
+      if (input.recallId) {
+        try {
+          controlUrls = (await lookupCpscRecall(input.recallId)).recallUrls;
+        } catch {
+          // The structured control source is best-effort. Firecrawl remains the
+          // evidence acquisition path, and no API outage becomes a verdict.
+        }
+      }
       const search = await firecrawl.search(ctx, `CPSC recall ${searchTerm}`, {
         sources: ["web"],
         includeDomains: ["cpsc.gov"],
@@ -173,10 +200,8 @@ export const acquireAndEvaluate = internalAction({
       });
       const urls = [
         ...new Set(
-          (search.web ?? [])
-            .map((result) =>
-              typeof result.url === "string" ? canonicalCpscRecallUrl(result.url) : null,
-            )
+          [...controlUrls, ...(search.web ?? []).map((result) => result.url)]
+            .map((result) => (typeof result === "string" ? canonicalCpscRecallUrl(result) : null))
             .filter((url): url is string => Boolean(url)),
         ),
       ];
@@ -191,7 +216,7 @@ export const acquireAndEvaluate = internalAction({
 
       for (const url of urls.slice(0, 3)) {
         const document = await firecrawl.scrape(ctx, url, {
-          formats: ["markdown"],
+          formats: ["markdown", "links"],
           onlyMainContent: true,
           maxAge: 60 * 60 * 1000,
         });
@@ -211,7 +236,12 @@ export const acquireAndEvaluate = internalAction({
         exactProductMatch = identifierClaims.some((claim) =>
           exactTextMatch(markdown, claim.normalizedValue),
         );
-        const officialEmails = verifiedConsumerEmails(markdown);
+        const officialEmails = [
+          ...new Set([
+            ...verifiedConsumerEmails(markdown),
+            ...(input.tier2VerifiedEmail ? [input.tier2VerifiedEmail] : []),
+          ]),
+        ];
         const officialRemedyTypes = remedyTypesIn(markdown);
         remedyConflict = Boolean(
           input.claimedRemedyType &&
@@ -247,6 +277,10 @@ export const acquireAndEvaluate = internalAction({
         if (remedyConflict) {
           contradictedClaims.push(...input.claims.filter((claim) => claim.type === "remedy"));
         }
+        const linkedManufacturerUrl = selectAuthorityLinkedManufacturerUrl(
+          document.links ?? [],
+          input.manufacturer,
+        );
         source = {
           canonicalUrl: url,
           canonicalDomain: "cpsc.gov",
@@ -260,6 +294,7 @@ export const acquireAndEvaluate = internalAction({
               matchedClaims.map((claim) => [claim.id, excerptFor(markdown, claim.normalizedValue)]),
             ),
           ),
+          ...(linkedManufacturerUrl ? { linkedManufacturerUrl } : {}),
         };
         break;
       }
@@ -347,6 +382,35 @@ export const persistEvaluation = internalMutation({
             createdAt: now,
           });
       sourceId = id;
+      if (args.source.linkedManufacturerUrl) {
+        const safeLinked = parseSafePublicUrl(args.source.linkedManufacturerUrl);
+        const existingLinked = await ctx.db
+          .query("sources")
+          .withIndex("by_case_and_url", (q) =>
+            q.eq("caseId", args.caseId).eq("canonicalUrl", safeLinked.canonicalUrl),
+          )
+          .unique();
+        if (!existingLinked) {
+          await ctx.db.insert("sources", {
+            caseId: args.caseId,
+            canonicalUrl: safeLinked.canonicalUrl,
+            canonicalDomain: safeLinked.registrableDomain,
+            sourceType: "manufacturer_page",
+            authorityTier: 2,
+            discoveredFromSourceId: id,
+            fetchedAt: now,
+            status: "pending",
+            title: "Manufacturer evidence linked directly by the CPSC record",
+            truncated: false,
+            extractionStatus: "pending",
+            verifiesContact: false,
+            createdAt: now,
+          });
+          await ctx.scheduler.runAfter(0, internal.firecrawl.startManufacturerCrawl, {
+            publicId: caseDocument.publicId,
+          });
+        }
+      }
       const excerpts = JSON.parse(args.source.excerptsByClaimJson) as Record<string, unknown>;
       for (const [relation, claimIds] of [
         ["supports", args.source.matchedClaimIds],
