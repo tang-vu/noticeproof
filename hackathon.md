@@ -12,7 +12,7 @@
 - **Auth:** none
 - **AI models:** gpt-5-mini (configurable with `OPENAI_MODEL`)
 - **Started:** 2026-08-26T14:18:38Z
-- **Last updated:** 2026-09-01T06:49:52Z
+- **Last updated:** 2026-09-01T07:19:33Z
 
 ## Log
 
@@ -96,10 +96,14 @@ Deployed the final privacy, evidence, and UI hardening release to production `lo
 
 A sanitized production proof then moved from extraction through evidence acquisition to `ACTIONABLE`: 12 normalized claims and one authoritative source produced deterministic verdict `VERIFIED_RECALL_UNSAFE_CHANNEL`, independently recovered `recall@epoca.com`, and appended an evidence receipt. The exact version-bound approval was consumed once and AgentMail reached `SENT` using the separately labeled controlled demo destination; `DELIVERED` is not claimed. The post-release runtime window showed successful health/static requests, signed AgentMail webhook responses at 204, completed OpenAI explanation, and outbound status synchronization with no observed non-null error.
 
-### 2026-09-01 - working tree
+### 2026-09-01 - b649877
 
 Rendered and QA-checked the submission demo from the production app without invoking another sponsor side effect. A reproducible Playwright/FFmpeg pipeline records the seeded hero and verified-official flows, synthesizes a local English voiceover, burns concise captions, and emits a fast-start H.264/AAC master plus thumbnail (`scripts/recordDemo.mjs`, `scripts/renderDemo.ps1`, `docs/video/VOICEOVER.txt`). The final master is 2:44.64 at 1440×810, 8.25 MB, returns to the product thesis for its final frame, and contains 0.73 seconds of trailing silence after the closing tagline. The public demo is available at `https://youtu.be/KX4xkUp6Qm8` under the title “NoticeProof - Don’t Click the Recall. Prove It. | Convex All Gas Hackathon.”
 
 The full gate exposed a shared-development-deployment timeout when Playwright launched all 16 project cases concurrently and used a five-second assertion for the state-creating network call. Bounded the suite to four parallel workers, kept retries disabled, and gave only that tracked-forwarding assertion a 15-second network allowance. The configured `npm run verify` passed formatting, lint, strict TypeScript, 86 unit/integration checks, the production build, and 12 Playwright cases with 4 intentional project/viewport skips. Credential-free clones explicitly skip only the two tracked-forwarding project cases whose UI is disabled without Convex and AgentMail browser configuration (`playwright.config.ts`, `tests/e2e/noticeproof.spec.ts`).
 
 Prepared the exact VibeApps form copy and image manifest, then recorded the user-confirmed public LinkedIn and X launch posts in the submission documents. Personal contact details remain excluded from this public build log (`docs/VIBEAPPS_FORM.md`, `docs/SUBMISSION_COPY.md`, `docs/SUBMISSION_CHECKLIST.md`).
+
+### 2026-09-01 - working tree
+
+Published the completed submission at `https://vibeapps.dev/s/noticeproof`. Before finalizing the repository, restored the officially generated Convex bindings to version control, excluded all raw/rendered media and test/build artifacts, removed an absolute workstation path from public copy, normalized text checkout to LF across platforms, and verified that the staged diff contained no secret or private contact value. A fresh public clone completed `npm ci`, format, lint, strict TypeScript, 86 unit/integration tests, and the production build; its credential-free E2E run passed 10 applicable cases and skipped 6 explicitly project- or integration-specific cases. The configured development environment separately passed all 12 applicable browser cases.

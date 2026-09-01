@@ -25,10 +25,10 @@ Status is evidence-based as of 2026-09-01.
 - [x] Public production `convex.site` URL tested in a fresh browser context
 - [x] Production sponsor-proof panel displays privacy-safe live milestones
 - [x] Final product commit `1960a0d` deployed with sanitized production smoke/integration proof
-- [ ] Video pipeline and final submission-document updates committed and pushed to `main`
+- [x] Video pipeline and final submission-document updates committed and pushed to `main`
 - [x] Public sub-three-minute demo video: `https://youtu.be/KX4xkUp6Qm8`
 - [x] Public LinkedIn and X launch posts published and linked
-- [ ] Exact VibeApps submission page fields reviewed and submitted
+- [x] VibeApps submission published: `https://vibeapps.dev/s/noticeproof`
 - [x] Paste-ready social and submission copy prepared in `docs/SOCIAL_POST.md` and `docs/SUBMISSION_COPY.md`
 
 ## Engineering gates
@@ -43,7 +43,6 @@ Status is evidence-based as of 2026-09-01.
 - [x] Duplicate webhook, cross-case access, seed idempotency, retention, missing-key, and evidence-change tests pass
 - [x] Local diff, dependency audit, secret-pattern scan, and Convex query/index patterns reviewed
 
-## External actions needed
+## Submission status
 
-1. Commit and push the final video/submission repository batch.
-2. Complete the final hackathon submission and preserve its confirmation.
+All required public delivery actions are complete. Preserve the submission confirmation and avoid changing production during judging unless a material issue requires a separately authorized fix.

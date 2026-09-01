@@ -1,6 +1,6 @@
 # VibeApps submission form — NoticeProof
 
-Copy the values below into the matching fields. Do not click **Submit App** until the public social-post URL is filled and the final repository changes are pushed.
+Submitted publicly at https://vibeapps.dev/s/noticeproof. The values below preserve the final form copy.
 
 ## Project details
 
@@ -240,3 +240,4 @@ Do not add unrelated tags.
 - Name and notification email are correct
 - No API key, private email body, capability token, or controlled demo destination appears in the form
 - Save a screenshot of the confirmation after submission
+- Public submission: `https://vibeapps.dev/s/noticeproof`

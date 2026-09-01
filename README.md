@@ -12,6 +12,8 @@ Urgent recall messages can be fake, outdated, incomplete—or describe a real re
 
 **Live production demo:** https://lovely-eel-809.convex.site — public, capability-scoped, and hosted through Convex static hosting. Production AgentMail intake, Convex realtime, OpenAI structured extraction and bounded explanation, Firecrawl evidence acquisition, and deterministic verification have been exercised live; controlled AgentMail delivery and reply attachment are also proven on the development deployment.
 
+**Hackathon submission:** https://vibeapps.dev/s/noticeproof
+
 ## Three-step demo
 
 1. Open **Real recall · unsafe channel**. The product and CPSC recall match, but the notice destination does not.
