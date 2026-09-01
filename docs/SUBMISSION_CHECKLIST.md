@@ -1,6 +1,6 @@
 # Submission checklist
 
-Status is evidence-based as of 2026-08-30.
+Status is evidence-based as of 2026-09-01.
 
 ## Required delivery
 
@@ -24,10 +24,10 @@ Status is evidence-based as of 2026-08-30.
 - [x] Production demo cases seeded idempotently
 - [x] Public production `convex.site` URL tested in a fresh browser context
 - [x] Production sponsor-proof panel displays privacy-safe live milestones
-- [x] Final reviewed commit `889e2ec` deployed with idempotent seeds and sanitized production live proof
-- [x] Repository changes committed and pushed to `main`
-- [ ] Demo video recorded and linked (under three minutes)
-- [ ] Public social post published and linked
+- [x] Final product commit `1960a0d` deployed with sanitized production smoke/integration proof
+- [ ] Video pipeline and final submission-document updates committed and pushed to `main`
+- [x] Public sub-three-minute demo video: `https://youtu.be/KX4xkUp6Qm8`
+- [x] Public LinkedIn and X launch posts published and linked
 - [ ] Exact VibeApps submission page fields reviewed and submitted
 - [x] Paste-ready social and submission copy prepared in `docs/SOCIAL_POST.md` and `docs/SUBMISSION_COPY.md`
 
@@ -37,12 +37,12 @@ Status is evidence-based as of 2026-08-30.
 - [x] Desktop/mobile Playwright coverage exists
 - [x] Automated axe audits report no serious or critical WCAG findings on landing and hero case
 - [x] Production Vite build succeeds
-- [x] Final `npm run verify` passes: 80 unit/integration checks, production build, and 12 Playwright passes (4 intentional project-specific skips)
+- [x] Final `npm run verify` passes: 86 unit/integration checks, production build, and 12 Playwright passes (4 intentional project-specific skips)
 - [x] Convex reviewer completed after live backend functions exist
 - [x] Duplicate webhook, cross-case access, seed idempotency, retention, missing-key, and evidence-change tests pass
 - [x] Local diff, dependency audit, secret-pattern scan, and Convex query/index patterns reviewed
 
 ## External actions needed
 
-1. Record and upload the sub-three-minute demo video.
-2. Approve social publication and the final hackathon submission.
+1. Commit and push the final video/submission repository batch.
+2. Complete the final hackathon submission and preserve its confirmation.

@@ -45,7 +45,7 @@ test("tracked forwarding keeps the capability in-browser and opens live instruct
   await page.getByRole("button", { name: "Start a tracked forward" }).click();
   await expect(
     page.getByRole("heading", { name: /Forward the notice, then watch this case update live/i }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText(/\[NP-[A-F0-9]{24}\]/)).toBeVisible();
   await expect(page.getByText(/code expires in 24 hours/i)).toBeVisible();
   expect(await page.evaluate(() => location.hash.startsWith("#/case/np_mail_"))).toBe(true);

@@ -3,6 +3,10 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
+  // The E2E suite shares one hosted Convex development deployment. Keep
+  // concurrency bounded so state-creating flows are tested without saturating
+  // the shared backend during a clean-install verification run.
+  workers: 4,
   forbidOnly: true,
   retries: 0,
   reporter: "list",

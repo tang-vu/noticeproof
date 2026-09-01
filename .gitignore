@@ -3,11 +3,11 @@ dist/
 coverage/
 playwright-report/
 test-results/
+demo-output/
 .env
 .env.local
 .env.*.local
 !.env.example
 *.log
 .convex/
-convex/_generated/
 *.tsbuildinfo

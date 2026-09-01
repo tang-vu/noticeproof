@@ -1,0 +1,17 @@
+Urgent recall messages are not simply real or fake. A message can describe a genuine recall while sending the consumer through the wrong door. NoticeProof verifies the notice before anyone clicks.
+
+This is the public production app. A consumer can deliberately paste a notice, upload a screenshot, or start a tracked forward to the persistent AgentMail inbox. NoticeProof never asks for whole-inbox access. The live proof panel shows the sponsor systems that have actually run, without exposing private messages or case identifiers.
+
+Now consider the hero case. The forwarded message accurately names a Paris Hilton mini-fridge recall, but it also pushes an urgent refund link. NoticeProof treats the entire message as untrusted data. OpenAI converts it into a strictly validated claim envelope, including the manufacturer, product, model, recall number, hazard, remedy, and every contact channel.
+
+Each claim is then evaluated against independently acquired evidence. Firecrawl finds and snapshots the exact CPSC record. Search rank never grants authority. The model and recall number match, while the supplied refund domain appears only in the inbound notice. The deterministic rule engine therefore reaches a nuanced result: the recall is real, but this notice's channel is unsafe.
+
+The rule ledger makes that decision inspectable. It shows the authority rule, exact product-scope match, and channel contradiction with stable rule identifiers. OpenAI may explain these structured results, but it cannot change an authority tier, recipient, eligible action, or verdict.
+
+NoticeProof then switches channels. The verified recipient was recovered independently from Tier One CPSC evidence. Before any email can be sent, the consumer sees the exact recipient and a redacted payload bound to the current verdict and evidence version. This fixture records only a demo approval and sends nothing. In the controlled production proof, AgentMail reached SENT using a separately labeled demo destination, never the manufacturer.
+
+Convex keeps the case state, timeline, evidence arrival, approval status, and thread events reactive without frontend polling. The evidence receipt captures the claim hash, evidence manifest, rule results, approval binding, and timestamps as a reproducible JSON record.
+
+Authority also beats appearance. A generic Gmail address can be trusted when the exact mailbox is explicitly listed by the CPSC; a polished brand-looking domain remains untrusted when it appears only in the notice.
+
+NoticeProof does not ask AI what is true. It uses AI to structure claims, authoritative web evidence to verify them, deterministic rules to decide, and a human-approved verified channel to act safely. Don't click the recall. Prove it.

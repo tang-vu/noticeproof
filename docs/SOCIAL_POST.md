@@ -1,6 +1,11 @@
 # Social launch copy
 
-Publish only after the production smoke test and demo video URL are final. Replace the bracketed video placeholder; do not imply CPSC affiliation or a completed remedy.
+The production smoke test and demo video are final. Do not imply CPSC affiliation or a completed remedy.
+
+Published posts:
+
+- LinkedIn: https://lnkd.in/p/gm86t8XD
+- X: https://x.com/tangvu_dev/status/2094678746427199663
 
 ## Primary post
 
@@ -14,7 +19,7 @@ Convex runs the realtime state machine and evidence record. OpenAI structures cl
 
 Live: https://lovely-eel-809.convex.site  
 Code: https://github.com/tang-vu/noticeproof  
-Demo: [VIDEO_URL]
+Demo: https://youtu.be/KX4xkUp6Qm8
 
 Built for the Convex All Gas Hackathon.
 

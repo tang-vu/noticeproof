@@ -37,7 +37,7 @@ The components are registered in `convex/convex.config.ts`. Production visibly e
 
 ## Safety and limits
 
-- No evidence is never labeled safe.
+- Absence of authoritative evidence is never labeled safe.
 - Missing model/lot/serial/UPC/date information produces a clarification state.
 - Only Tier 1 or Tier 1-linked Tier 2 evidence can verify a contact.
 - Raw email HTML is never rendered; URL schemes, credentials, local/private hosts, trackers, punycode, and registrable domains are handled explicitly.
@@ -107,9 +107,11 @@ Deployment requires an authenticated Convex project and configured sponsor crede
 - [Three-minute demo script](docs/DEMO_SCRIPT.md)
 - [Submission checklist](docs/SUBMISSION_CHECKLIST.md)
 - [Paste-ready submission copy](docs/SUBMISSION_COPY.md)
+- [VibeApps form copy](docs/VIBEAPPS_FORM.md)
 - [Social launch copy](docs/SOCIAL_POST.md)
+- [Video voiceover and upload copy](docs/video/)
 
-Demo video: not recorded yet.
+**Demo video:** [Watch the 2:44 product walkthrough on YouTube](https://youtu.be/KX4xkUp6Qm8).
 
 ## License
 

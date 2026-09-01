@@ -6,8 +6,9 @@ Use this as a paste-ready source for the final hackathon form. Confirm the form'
 - **Tagline:** Don't click the recall. Prove it.
 - **Live app:** https://lovely-eel-809.convex.site
 - **Source:** https://github.com/tang-vu/noticeproof
-- **Video:** `[VIDEO_URL]`
-- **Social post:** `[SOCIAL_POST_URL]`
+- **Video:** https://youtu.be/KX4xkUp6Qm8
+- **LinkedIn post:** https://lnkd.in/p/gm86t8XD
+- **X post:** https://x.com/tangvu_dev/status/2094678746427199663
 
 ## One sentence
 

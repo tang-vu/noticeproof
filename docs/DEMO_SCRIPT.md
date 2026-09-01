@@ -2,6 +2,8 @@
 
 Target: 2:45–2:55. Talk less; keep the product visible.
 
+Published demo: https://youtu.be/KX4xkUp6Qm8 (2:44)
+
 ## 0:00–0:18 — The problem
 
 Open the landing page.
