@@ -104,6 +104,6 @@ The full gate exposed a shared-development-deployment timeout when Playwright la
 
 Prepared the exact VibeApps form copy and image manifest, then recorded the user-confirmed public LinkedIn and X launch posts in the submission documents. Personal contact details remain excluded from this public build log (`docs/VIBEAPPS_FORM.md`, `docs/SUBMISSION_COPY.md`, `docs/SUBMISSION_CHECKLIST.md`).
 
-### 2026-09-01 - working tree
+### 2026-09-01 - f11167c
 
 Published the completed submission at `https://vibeapps.dev/s/noticeproof`. Before finalizing the repository, restored the officially generated Convex bindings to version control, excluded all raw/rendered media and test/build artifacts, removed an absolute workstation path from public copy, normalized text checkout to LF across platforms, and verified that the staged diff contained no secret or private contact value. A fresh public clone completed `npm ci`, format, lint, strict TypeScript, 86 unit/integration tests, and the production build; its credential-free E2E run passed 10 applicable cases and skipped 6 explicitly project- or integration-specific cases. The configured development environment separately passed all 12 applicable browser cases.
