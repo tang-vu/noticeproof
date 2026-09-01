@@ -38,6 +38,7 @@ Status is evidence-based as of 2026-09-01.
 - [x] Automated axe audits report no serious or critical WCAG findings on landing and hero case
 - [x] Production Vite build succeeds
 - [x] Final `npm run verify` passes: 86 unit/integration checks, production build, and 12 Playwright passes (4 intentional project-specific skips)
+- [x] Credential-free clean clone reaches the same gate with only the two configured tracked-forwarding cases skipped
 - [x] Convex reviewer completed after live backend functions exist
 - [x] Duplicate webhook, cross-case access, seed idempotency, retention, missing-key, and evidence-change tests pass
 - [x] Local diff, dependency audit, secret-pattern scan, and Convex query/index patterns reviewed
