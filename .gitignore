@@ -11,3 +11,9 @@ demo-output/
 *.log
 .convex/
 *.tsbuildinfo
+
+# AI assistant artifacts
+.devin/
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+NUL
